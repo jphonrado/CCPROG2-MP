@@ -19,7 +19,9 @@ typedef struct {
     char password[MAX_CHAR_PASS];
     char securityQuestion[MAX_CHAR_SEC];
     char securityAnswer[MAX_CHAR_SEC];
+    char description[101]; 
 } UserInfo;
+
 
 /***********Utility Functions****************/
 void clean(String strTemp);
@@ -157,6 +159,7 @@ void createNewAccount(UserInfo newUser[MAX_USERS], int *numUsers) {
 
         if (!bGoBack) {
             // Assigning userTemp to new user structure
+            strcpy(newUser[*numUsers].description, "DEFAULT USER"); 
             strcpy(newUser[*numUsers].name, userTemp.name);
             strcpy(newUser[*numUsers].username, userTemp.username);
             strcpy(newUser[*numUsers].password, userTemp.password);
@@ -180,13 +183,14 @@ void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers) { //Saves user i
         fprintf(pFile, "%d\n", numUsers);
 
         // Loop through all users and write their information
-        for (i = 0; i < numUsers; i++) {
-            fprintf(pFile, "%s-%s-%s-%s-%s\n", 
+        for (i = 0; i < numUsers; i++) {  // FIXED HERE
+            fprintf(pFile, "%s-%s-%s-%s-%s-%s\n", 
                 newUser[i].name,
                 newUser[i].username,
                 newUser[i].password,
                 newUser[i].securityQuestion,
-                newUser[i].securityAnswer);
+                newUser[i].securityAnswer,
+                newUser[i].description);
         }
         fclose(pFile);
     } else {
@@ -194,7 +198,7 @@ void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers) { //Saves user i
     }
 }
 
-void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers) { //Loads information from UsersFile
+void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers) {
     FILE *pFile = fopen(USERSFILE, "rt"); // Open in read mode
     String strTemp;
     int i = 0;
@@ -211,22 +215,163 @@ void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers) { //Loads inf
 
         // Loop through all users and parse their information
         while (fgets(strTemp, sizeof(strTemp), pFile) != NULL && i < *numUsers) {
-            // Split each line using sscanf to read and store in newUser
-            sscanf(strTemp, "%[^-]-%[^-]-%[^-]-%[^-]-%[^\n]",
-                newUser[i].name,
-                newUser[i].username,
-                newUser[i].password,
-                newUser[i].securityQuestion,
-                newUser[i].securityAnswer);
-
-            i++;
+            // Ensure all 6 fields are read correctly
+            if (sscanf(strTemp, "%[^-]-%[^-]-%[^-]-%[^-]-%[^-]-%[^\n]",
+                       newUser[i].name,
+                       newUser[i].username,
+                       newUser[i].password,
+                       newUser[i].securityQuestion,
+                       newUser[i].securityAnswer,
+                       newUser[i].description) == 6) {
+                i++;
+            } else {
+                printf("Error reading user data. Skipping invalid entry.\n");
+            }
         }
         fclose(pFile);
-    } 
-    else {
+    } else {
         printf("Error reading %s. Initializing with 0 users.\n", USERSFILE);
         *numUsers = 0;
     }
+}
+
+void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
+    char tempName[21], tempDescription[101];
+    char passwordCheck[MAX_CHAR_PASS];
+    int i, userIndex = -1, verified = 0, done = 0, inputValid = 0;
+
+    // Find user by username
+    for (i = 0; i < numUsers && userIndex == -1; i++) {
+        if (strcmp(newUser[i].username, username) == 0) {
+            userIndex = i;
+        }
+    }
+
+    // Check if the user was found
+    if (userIndex != -1) {
+        while (!done) {
+            system("cls");
+            printf("Modify Personal Contents (Enter 'back' to cancel)\n\n");
+
+            // Show current details
+            printf("Current Name: %s\n", newUser[userIndex].name);
+            printf("Current Description: %s\n", strcmp(newUser[userIndex].description, "DEFAULT USER") == 0 ? "DEFAULT USER" : newUser[userIndex].description);
+
+            // Input new name
+            printf("\nEnter New Name: ");
+            fgets(tempName, sizeof(tempName), stdin);
+            clean(tempName);
+
+            // Check if user wants to go back
+            if (strcmp(tempName, "back") == 0) {
+                done = 1;
+            } else {
+                // Input new description
+                printf("Enter New Description: ");
+                fgets(tempDescription, sizeof(tempDescription), stdin);
+                clean(tempDescription);
+
+                if (strcmp(tempDescription, "back") == 0) {
+                    done = 1;
+                } else {
+                    inputValid = 1;
+                }
+            }
+
+            // Only proceed if inputs are valid
+            if (inputValid && !done) {
+                // Verify password to confirm changes
+                printf("\nEnter your password to confirm changes: ");
+                fgets(passwordCheck, sizeof(passwordCheck), stdin);
+                clean(passwordCheck);
+
+                // Validate password
+                if (strcmp(passwordCheck, newUser[userIndex].password) == 0) {
+                    verified = 1;
+                } else {
+                    printf("Incorrect password. Please try again.\n");
+                    system("pause");
+                }
+
+                // Apply changes if verified
+                if (verified) {
+                    // Update name and description
+                    strcpy(newUser[userIndex].name, tempName);
+                    if (strlen(tempDescription) == 0) {
+                        strcpy(newUser[userIndex].description, "DEFAULT USER");
+                    } else {
+                        strcpy(newUser[userIndex].description, tempDescription);
+                    }
+
+                    // Save changes and exit
+                    saveToUsersFile(newUser, numUsers);
+                    printf("Changes saved successfully!\n");
+                    done = 1;  // Exit after successful modification
+                }
+            }
+        }
+    } else {
+        printf("User not found.\n");
+        system("pause");
+    }
+}
+
+
+void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
+    int nChoice, bQuit = 0, bLogout = 0;
+
+    do {
+        system("cls");
+        printf("Welcome to the User Module, %s!\n\n", username);
+        printf("[1] - Compose Message\n");
+        printf("[2] - Inbox\n");
+        printf("[3] - Sent\n");
+        printf("[4] - View Announcements\n");
+        printf("[5] - Modify Personal Contents\n");
+        printf("[6] - Modify Account Security\n");
+        printf("[7] - Modify Personal Connections\n");
+        printf("[8] - Browse Users\n");
+        printf("[9] - Logout\n");
+        printf("[10] - Previous Page\n");
+        printf("\n");
+
+        nChoice = getValidChoice(1, 10);
+
+        switch (nChoice) {
+            case 1:
+                //composeMessagePage(username);
+                break;
+            case 2:
+                //viewInbox(username);
+                break;
+            case 3:
+                //viewSentMessages(username);
+                break;
+            case 4:
+                //viewAnnouncements();
+                break;
+            case 5:
+                modifyPersonalContents(newUser, numUsers, username);
+                break;
+            case 6:
+                //modifyAccountSecurity(newUser, numUsers, username);
+                break;
+            case 7:
+                //modifyPersonalConnections(newUser, numUsers, username);
+                break;
+            case 8:
+                //browseUsers(newUser, numUsers);
+                break;
+            case 9:
+                printf("\nLogging out...\n");
+                bLogout = 1;
+                bQuit = 1;  // Exit the module when logging out
+                break;
+            case 10:
+                bQuit = 1;  // Go back to the previous page
+                break;
+        }
+    } while (!bQuit);
 }
 
 int isUserValid(String username, String password, UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not 
@@ -238,16 +383,16 @@ int isUserValid(String username, String password, UserInfo newUser[MAX_USERS], i
     return 0; // Invalid user
 }
 
-void Login(UserInfo newUser[MAX_USERS], int *numUsers) { //Login function
+void Login(UserInfo newUser[MAX_USERS], int *numUsers) {
     String nameInput;
     String passInput;
     int attempts = 3;
     int bGoBack = 0;
 
     while (attempts > 0 && !bGoBack) {
-    	system("cls");
-    	printf("Enter your username or enter \"back\" to return to the previous page\n");
-    	printf("\n");
+        system("cls");
+        printf("Enter your username or enter \"back\" to return to the previous page\n\n");
+        
         printf("Enter Username: ");
         fgets(nameInput, sizeof(nameInput), stdin);
         clean(nameInput);
@@ -261,13 +406,11 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers) { //Login function
             if (isUserValid(nameInput, passInput, newUser, *numUsers)) {
                 printf("Login successful!\n");
                 system("pause");
-                //userModulePage(nameInput);
-
+				userModulePage(newUser, *numUsers, nameInput);
             } 
-			else {
+            else {
                 attempts--;
-                printf("Incorrect username or password. Attempts left: %d\n", attempts);
-                printf("\n");
+                printf("Incorrect username or password. Attempts left: %d\n\n", attempts);
                 system("pause");
             }
         }
@@ -280,6 +423,7 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers) { //Login function
     }
     system("pause");
 }
+
 
 void LoginPage(UserInfo newUser[MAX_USERS], int *numUsers) { //Login Page UI
     int nChoice, bQuit = 0;
