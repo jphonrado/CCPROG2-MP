@@ -38,16 +38,17 @@ void createNewAccount(UserInfo newUser[MAX_USERS], int *numUsers);
 /********************************************************************************************/
 
 /************************************ADMIN FUNCTIONS*****************************************/
-//void saveToAdminPassFile(char adminPass[MAX_CHAR_PASS]);
-//void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]);
-//void createNewAdminPass(char adminPass[MAX_CHAR_PASS]);
-//void AdminModuleLogin(char adminPass[MAX_CHAR_PASS]);
-//int validateOldPassword(char adminPass[MAX_CHAR_PASS]);
-//void AdminModulePage(char adminPass[MAX_CHAR_PASS]);
+void saveToAdminPassFile(char adminPass[MAX_CHAR_PASS]);
+void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]);
+void createNewAdminPass(char adminPass[MAX_CHAR_PASS]);
+void changeAdminPass(char adminPass[MAX_CHAR_PASS]);
+void AdminModuleLogin(char adminPass[MAX_CHAR_PASS]);
+void AdminModulePage(char adminPass[MAX_CHAR_PASS]);
 /********************************************************************************************/
 
 /***********************************USER MODULE FUNCTIONS************************************/
-
+void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username);
+void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username);
 /********************************************************************************************/
 
 /*****************
@@ -77,6 +78,150 @@ int getValidChoice(int lower, int upper) {
 
     return choice;
 }
+
+
+/*********************
+USER MODULE FUNCTIONS
+**********************/
+
+void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
+    char tempName[21], tempDescription[101];
+    char passwordCheck[MAX_CHAR_PASS];
+    int i, userIndex = -1, verified = 0, done = 0, inputValid = 0;
+
+    // Find user by username
+    for (i = 0; i < numUsers && userIndex == -1; i++) {
+        if (strcmp(newUser[i].username, username) == 0) {
+            userIndex = i;
+        }
+    }
+
+    // Check if the user was found
+    if (userIndex != -1) {
+        while (!done) {
+            system("cls");
+            printf("Modify Personal Contents (Enter 'back' to cancel)\n\n");
+
+            // Show current details
+            printf("Current Name: %s\n", newUser[userIndex].name);
+            printf("Current Description: %s\n", strcmp(newUser[userIndex].description, "DEFAULT USER") == 0 ? "DEFAULT USER" : newUser[userIndex].description);
+
+            // Input new name
+            printf("\nEnter New Name: ");
+            fgets(tempName, sizeof(tempName), stdin);
+            clean(tempName);
+
+            // Check if user wants to go back
+            if (strcmp(tempName, "back") == 0) {
+                done = 1;
+            } else {
+                // Input new description
+                printf("Enter New Description: ");
+                fgets(tempDescription, sizeof(tempDescription), stdin);
+                clean(tempDescription);
+
+                if (strcmp(tempDescription, "back") == 0) {
+                    done = 1;
+                } else {
+                    inputValid = 1;
+                }
+            }
+
+            // Only proceed if inputs are valid
+            if (inputValid && !done) {
+                // Verify password to confirm changes
+                printf("\nEnter your password to confirm changes: ");
+                fgets(passwordCheck, sizeof(passwordCheck), stdin);
+                clean(passwordCheck);
+
+                // Validate password
+                if (strcmp(passwordCheck, newUser[userIndex].password) == 0) {
+                    verified = 1;
+                } else {
+                    printf("Incorrect password. Please try again.\n");
+                    system("pause");
+                }
+
+                // Apply changes if verified
+                if (verified) {
+                    // Update name and description
+                    strcpy(newUser[userIndex].name, tempName);
+                    if (strlen(tempDescription) == 0) {
+                        strcpy(newUser[userIndex].description, "DEFAULT USER");
+                    } else {
+                        strcpy(newUser[userIndex].description, tempDescription);
+                    }
+
+                    // Save changes and exit
+                    saveToUsersFile(newUser, numUsers);
+                    printf("Changes saved successfully!\n");
+                    done = 1;  // Exit after successful modification
+                }
+            }
+        }
+    } else {
+        printf("User not found.\n");
+        system("pause");
+    }
+}
+
+void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
+    int nChoice, bQuit = 0, bLogout = 0;
+
+    do {
+        system("cls");
+        printf("Welcome to the User Module, %s!\n\n", username);
+        printf("[1] - Compose Message\n");
+        printf("[2] - Inbox\n");
+        printf("[3] - Sent\n");
+        printf("[4] - View Announcements\n");
+        printf("[5] - Modify Personal Contents\n");
+        printf("[6] - Modify Account Security\n");
+        printf("[7] - Modify Personal Connections\n");
+        printf("[8] - Browse Users\n");
+        printf("[9] - Logout\n");
+        printf("[10] - Previous Page\n");
+        printf("\n");
+
+        nChoice = getValidChoice(1, 10);
+
+        switch (nChoice) {
+            case 1:
+                //composeMessagePage(username);
+                break;
+            case 2:
+                //viewInbox(username);
+                break;
+            case 3:
+                //viewSentMessages(username);
+                break;
+            case 4:
+                //viewAnnouncements();
+                break;
+            case 5:
+                modifyPersonalContents(newUser, numUsers, username);
+                break;
+            case 6:
+                //modifyAccountSecurity(newUser, numUsers, username);
+                break;
+            case 7:
+                //modifyPersonalConnections(newUser, numUsers, username);
+                break;
+            case 8:
+                //browseUsers(newUser, numUsers);
+                break;
+            case 9:
+                printf("\nLogging out...\n");
+                bLogout = 1;
+                bQuit = 1;  // Exit the module when logging out
+                break;
+            case 10:
+                bQuit = 1;  // Go back to the previous page
+                break;
+        }
+    } while (!bQuit);
+}
+
 
 /********************************
 USER CREATION AND LOGIN FUNCTIONS
@@ -235,145 +380,6 @@ void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers) {
     }
 }
 
-void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
-    char tempName[21], tempDescription[101];
-    char passwordCheck[MAX_CHAR_PASS];
-    int i, userIndex = -1, verified = 0, done = 0, inputValid = 0;
-
-    // Find user by username
-    for (i = 0; i < numUsers && userIndex == -1; i++) {
-        if (strcmp(newUser[i].username, username) == 0) {
-            userIndex = i;
-        }
-    }
-
-    // Check if the user was found
-    if (userIndex != -1) {
-        while (!done) {
-            system("cls");
-            printf("Modify Personal Contents (Enter 'back' to cancel)\n\n");
-
-            // Show current details
-            printf("Current Name: %s\n", newUser[userIndex].name);
-            printf("Current Description: %s\n", strcmp(newUser[userIndex].description, "DEFAULT USER") == 0 ? "DEFAULT USER" : newUser[userIndex].description);
-
-            // Input new name
-            printf("\nEnter New Name: ");
-            fgets(tempName, sizeof(tempName), stdin);
-            clean(tempName);
-
-            // Check if user wants to go back
-            if (strcmp(tempName, "back") == 0) {
-                done = 1;
-            } else {
-                // Input new description
-                printf("Enter New Description: ");
-                fgets(tempDescription, sizeof(tempDescription), stdin);
-                clean(tempDescription);
-
-                if (strcmp(tempDescription, "back") == 0) {
-                    done = 1;
-                } else {
-                    inputValid = 1;
-                }
-            }
-
-            // Only proceed if inputs are valid
-            if (inputValid && !done) {
-                // Verify password to confirm changes
-                printf("\nEnter your password to confirm changes: ");
-                fgets(passwordCheck, sizeof(passwordCheck), stdin);
-                clean(passwordCheck);
-
-                // Validate password
-                if (strcmp(passwordCheck, newUser[userIndex].password) == 0) {
-                    verified = 1;
-                } else {
-                    printf("Incorrect password. Please try again.\n");
-                    system("pause");
-                }
-
-                // Apply changes if verified
-                if (verified) {
-                    // Update name and description
-                    strcpy(newUser[userIndex].name, tempName);
-                    if (strlen(tempDescription) == 0) {
-                        strcpy(newUser[userIndex].description, "DEFAULT USER");
-                    } else {
-                        strcpy(newUser[userIndex].description, tempDescription);
-                    }
-
-                    // Save changes and exit
-                    saveToUsersFile(newUser, numUsers);
-                    printf("Changes saved successfully!\n");
-                    done = 1;  // Exit after successful modification
-                }
-            }
-        }
-    } else {
-        printf("User not found.\n");
-        system("pause");
-    }
-}
-
-
-void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
-    int nChoice, bQuit = 0, bLogout = 0;
-
-    do {
-        system("cls");
-        printf("Welcome to the User Module, %s!\n\n", username);
-        printf("[1] - Compose Message\n");
-        printf("[2] - Inbox\n");
-        printf("[3] - Sent\n");
-        printf("[4] - View Announcements\n");
-        printf("[5] - Modify Personal Contents\n");
-        printf("[6] - Modify Account Security\n");
-        printf("[7] - Modify Personal Connections\n");
-        printf("[8] - Browse Users\n");
-        printf("[9] - Logout\n");
-        printf("[10] - Previous Page\n");
-        printf("\n");
-
-        nChoice = getValidChoice(1, 10);
-
-        switch (nChoice) {
-            case 1:
-                //composeMessagePage(username);
-                break;
-            case 2:
-                //viewInbox(username);
-                break;
-            case 3:
-                //viewSentMessages(username);
-                break;
-            case 4:
-                //viewAnnouncements();
-                break;
-            case 5:
-                modifyPersonalContents(newUser, numUsers, username);
-                break;
-            case 6:
-                //modifyAccountSecurity(newUser, numUsers, username);
-                break;
-            case 7:
-                //modifyPersonalConnections(newUser, numUsers, username);
-                break;
-            case 8:
-                //browseUsers(newUser, numUsers);
-                break;
-            case 9:
-                printf("\nLogging out...\n");
-                bLogout = 1;
-                bQuit = 1;  // Exit the module when logging out
-                break;
-            case 10:
-                bQuit = 1;  // Go back to the previous page
-                break;
-        }
-    } while (!bQuit);
-}
-
 int isUserValid(String username, String password, UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not 
     for (int i = 0; i < numUsers; i++) {
         if (strcmp(newUser[i].username, username) == 0 && strcmp(newUser[i].password, password) == 0) {
@@ -424,8 +430,8 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers) {
     system("pause");
 }
 
-
 void LoginPage(UserInfo newUser[MAX_USERS], int *numUsers) { //Login Page UI
+
     int nChoice, bQuit = 0;
 
     do {
@@ -459,16 +465,188 @@ void LoginPage(UserInfo newUser[MAX_USERS], int *numUsers) { //Login Page UI
     } while (!bQuit);
 }
 
-/*********************
-USER MODULE FUNCTIONS
-**********************/
+/**************
+ADMIN FUNCTIONS
+***************/
 
+void saveToAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //Used in changePassword file, saves a new password to AdminPassFIle if called
+	FILE *pFile = fopen(ADMINPASSFILE, "wt"); // Open in write mode
+    int i;
 
+    if (pFile != NULL) {
+        // Save the number of users first
+        fprintf(pFile, "%s\n", adminPass);
+        fclose(pFile);
+    } else {
+        printf("Error generating %s\n", ADMINPASSFILE);
+    }
+}
+
+void createNewAdminPass(char adminPass[MAX_CHAR_PASS]) { //Create new admin password function
+    String strInput;
+    int bGoBack = 0;
+    String confirmPassword;
+
+    system("cls");
+    printf("Creating New Admin Password (Enter 'back' to return to the previous page)\n\n");
+
+    while (!bGoBack) {
+        do {
+            printf("Password: ");
+            fgets(strInput, sizeof(strInput), stdin);
+            clean(strInput);
+            bGoBack = strcmp(strInput, "back") == 0;
+
+            if (!bGoBack) {
+                printf("Re-enter Password: ");
+                fgets(confirmPassword, sizeof(confirmPassword), stdin);
+                clean(confirmPassword);
+                bGoBack = strcmp(confirmPassword, "back") == 0;
+
+                if (strcmp(strInput, confirmPassword) != 0) {
+                    printf("Passwords do not match. Try again.\n");
+                }
+            }
+        } while (!bGoBack && strcmp(strInput, confirmPassword) != 0);
+
+        if (!bGoBack) {
+            // Assign new password to adminPass
+            strcpy(adminPass, strInput);
+            saveToAdminPassFile(adminPass);
+            printf("Admin Password created successfully!\n");
+            bGoBack = 1;
+            system("pause");
+        }
+    }
+}
+
+void changeAdminPass(char adminPass[MAX_CHAR_PASS]) {
+    String currentPass, newPass, confirmPass;
+    int bGoBack = 0;
+
+    system("cls");
+    printf("Change Admin Password (Enter 'back' to return to the previous page)\n\n");
+
+    while (!bGoBack) {
+        // Verify current password
+        printf("Enter current password: ");
+        fgets(currentPass, sizeof(currentPass), stdin);
+        clean(currentPass);
+
+        if (strcmp(currentPass, "back") == 0) {
+            bGoBack = 1;
+        } else if (strcmp(currentPass, adminPass) == 0) {
+            // Get new password
+            do {
+                printf("Enter new password: ");
+                fgets(newPass, sizeof(newPass), stdin);
+                clean(newPass);
+
+                printf("Re-enter new password: ");
+                fgets(confirmPass, sizeof(confirmPass), stdin);
+                clean(confirmPass);
+
+                if (strcmp(newPass, confirmPass) != 0) {
+                    printf("Passwords do not match. Try again.\n");
+                }
+            } while (strcmp(newPass, confirmPass) != 0);
+
+            // Save new password
+            strcpy(adminPass, newPass);
+            saveToAdminPassFile(adminPass);
+            printf("Password changed successfully!\n");
+            system("pause");
+            bGoBack = 1;
+        } else {
+            printf("Incorrect current password. Try again.\n");
+            system("pause");
+        }
+    }
+}
+
+void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //loads information from AdminPassFile (creates new file if not initialized yet)
+    FILE *pFile;
+    int isEmpty = 1;
+
+    // Open file in read mode
+    pFile = fopen("adminPass.txt", "rt");
+
+    if (pFile != NULL) {
+    	fgets(adminPass, MAX_CHAR_PASS, pFile);
+        clean(adminPass); // Clean newline if any
+        fclose(pFile);
+        
+    }
+    else {
+    	createNewAdminPass(adminPass);
+	}
+}
+
+void AdminModuleLogin(char adminPass[MAX_CHAR_PASS]) {
+    String enteredPass;
+    int attempts = 3;
+    int bGoBack = 0;
+    
+	loadFromAdminPassFile(adminPass);
+
+    while (attempts > 0 && !bGoBack) {
+        system("cls");
+        printf("Enter admin password or type \"back\" to return:\n");
+        printf("\nEnter Password: ");
+        fgets(enteredPass, sizeof(enteredPass), stdin);
+        clean(enteredPass);
+
+        if (strcmp(enteredPass, "back") == 0) {
+            bGoBack = 1;
+        } else if (strcmp(enteredPass, adminPass) == 0) {
+            printf("Admin login successful!\n");
+            AdminModulePage(adminPass);
+			system("pause");
+        } else {
+            attempts--;
+            printf("Incorrect password. Attempts left: %d\n", attempts);
+            system("pause");
+        }
+    }
+}
+
+void AdminModulePage(char adminPass[MAX_CHAR_PASS]) {
+    int nChoice;
+    int bQuit = 0;
+
+    while (!bQuit) {
+        system("cls");
+        printf("ADMIN MODULE\n");
+        printf("\n");
+        printf("Please choose an option:\n\n");
+        printf("[1] - Users Module\n");
+        printf("[2] - Messages Module\n");
+        printf("[3] - Change Admin Password\n");
+        printf("[4] - Quit\n\n");
+
+        nChoice = getValidChoice(1, 4);
+
+        switch (nChoice) {
+            case 1:
+//                adminHandleUsersModule();
+                break;
+            case 2:
+//                adminHandleMessagesModule();
+                break;
+            case 3:
+                changeAdminPass(adminPass);
+                break;
+            case 4:
+                bQuit = 1;
+                break;
+        }
+    }
+}
 
 int main() {
 	int nChoice, bQuit = 0; //Flags
 	int numUsers; // No. of users
-	//char adminPass[MAX_CHAR_PASS];	
+	char adminPass[MAX_CHAR_PASS];	
 	UserInfo newUser[MAX_USERS];
 	
 	numUsers = 0; 
@@ -487,7 +665,7 @@ int main() {
         	LoginPage(newUser, &numUsers);
 		}
         else if (nChoice == 2) {
-        //    AdminModuleLogin(adminPass);
+            AdminModuleLogin(adminPass);
 		}
         else if (nChoice == 3) {
         	bQuit = 1;
@@ -498,142 +676,6 @@ int main() {
 	return 0;
 }
 
-/**************
-ADMIN FUNCTIONS
-***************/
 
-//void saveToAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //Used in changePassword file, saves a new password to AdminPassFIle if called
-//	FILE *pFile = fopen(ADMINPASSFILE, "wt"); // Open in write mode
-//    int i;
-//
-//    if (pFile != NULL) {
-//        // Save the number of users first
-//        fprintf(pFile, "%s\n", adminPass);
-//        fclose(pFile);
-//    } else {
-//        printf("Error generating %s\n", ADMINPASSFILE);
-//    }
-//}
-//
-//void createNewAdminPass(char adminPass[MAX_CHAR_PASS]) { //Create new admin password function
-//    String strInput;
-//    int bGoBack = 0;
-//    String confirmPassword;
-//
-//    system("cls");
-//    printf("Creating New Admin Password (Enter 'back' to return to the previous page)\n\n");
-//
-//    while (!bGoBack) {
-//        do {
-//            printf("Password: ");
-//            fgets(strInput, sizeof(strInput), stdin);
-//            clean(strInput);
-//            bGoBack = strcmp(strInput, "back") == 0;
-//
-//            if (!bGoBack) {
-//                printf("Re-enter Password: ");
-//                fgets(confirmPassword, sizeof(confirmPassword), stdin);
-//                clean(confirmPassword);
-//                bGoBack = strcmp(confirmPassword, "back") == 0;
-//
-//                if (strcmp(strInput, confirmPassword) != 0) {
-//                    printf("Passwords do not match. Try again.\n");
-//                }
-//            }
-//        } while (!bGoBack && strcmp(strInput, confirmPassword) != 0);
-//
-//        if (!bGoBack) {
-//            // Assign new password to adminPass
-//            strcpy(adminPass, strInput);
-//            saveToAdminPassFile(adminPass);
-//            printf("Admin Password created successfully!\n");
-//            bGoBack = 1;
-//            system("pause");
-//        }
-//    }
-//}
-//
-//void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //loads information from AdminPassFile (creates new file if not initialized yet)
-//    FILE *pFile;
-//    int isEmpty = 1;
-//
-//    // Open file in read mode
-//    pFile = fopen("adminPass.txt", "rt");
-//
-//    if (pFile != NULL) {
-//    	fgets(adminPass, MAX_CHAR_PASS, pFile);
-//        clean(adminPass); // Clean newline if any
-//        fclose(pFile);
-//    }
-//    else {
-//    	printf("Could not load file.\n");
-//	}
-//}
-//
-//void AdminModuleLogin(char adminPass[MAX_CHAR_PASS]) {
-//    String enteredPass;
-//    int attempts = 3;
-//    int bGoBack = 0;
-//    
-//	loadFromAdminPassFile(adminPass);
-//
-//    while (attempts > 0 && !bGoBack) {
-//        system("cls");
-//        printf("Enter admin password or type \"back\" to return:\n");
-//        printf("\nEnter Password: ");
-//        fgets(enteredPass, sizeof(enteredPass), stdin);
-//        clean(enteredPass);
-//
-//        if (strcmp(enteredPass, "back") == 0) {
-//            bGoBack = 1;
-//        } else if (strcmp(enteredPass, adminPass) == 0) {
-//            printf("Admin login successful!\n");
-//            AdminModulePage(adminPass);
-//			system("pause");
-//        } else {
-//            attempts--;
-//            printf("Incorrect password. Attempts left: %d\n", attempts);
-//            system("pause");
-//        }
-//    }
-//
-//    if (bGoBack) {
-//        printf("Returning to the previous page...\n");
-//    } else if (attempts == 0) {
-//        printf("Too many failed attempts. Access denied.\n");
-//    }
-//}
-//
-//void AdminModulePage(char adminPass[MAX_CHAR_PASS]) {
-//    int nChoice;
-//    int bQuit = 0;
-//
-//    while (!bQuit) {
-//        system("cls");
-//        printf("ADMIN MODULE\n");
-//        printf("\n");
-//        printf("Please choose an option:\n\n");
-//        printf("[1] - Users Module\n");
-//        printf("[2] - Messages Module\n");
-//        printf("[3] - Change Admin Password\n");
-//        printf("[4] - Quit\n\n");
-//
-//        nChoice = getValidChoice(1, 4);
-//
-//        switch (nChoice) {
-//            case 1:
-////                adminHandleUsersModule();
-//                break;
-//            case 2:
-////                adminHandleMessagesModule();
-//                break;
-//            case 3:
-//                //changeAdminPass(adminPass);
-//                break;
-//            case 4:
-//                bQuit = 1;
-//                break;
-//        }
-//    }
-//}
+
 
