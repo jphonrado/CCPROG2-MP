@@ -1,6 +1,5 @@
-1
-JP-Raine-CCPROG2-4
-Hello! 
-Please
-Send
-Help
+2
+JP|Raine,Carlos,Pia|Golf Tomorrow|1
+GOLF TOMORROW 10AM.
+JP|everyone|Let us play golf|1
+Golf Tomorrow END
