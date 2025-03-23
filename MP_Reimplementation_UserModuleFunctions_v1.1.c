@@ -13,7 +13,6 @@
 #define MESSAGESFILE "MessagesFile.txt"
 #define ADMINPASSFILE "AdminPassFile.txt"
 
-
 typedef char String[101];
 
 typedef struct {
@@ -32,6 +31,8 @@ typedef struct {
     String strMessageEntry[MAX_LINES];
 } messageTag;
 
+void saveToMessagesFile(messageTag *newMessage, int numNewMessages);
+void loadFromMessagesFile(messageTag newMessage[MAX_MESSAGES], int *numMessages);
 /*****************
 UTILITY FUNCTIONS
 ******************/
@@ -63,12 +64,65 @@ int getValidChoice(int lower, int upper) {
 /********************
 USER MODULE FUNCTIONS
 *********************/
+
+void saveToMessagesFile(messageTag *newMessage, int numNewMessages) {
+    FILE *pFile;
+    messageTag oldMessages[MAX_MESSAGES];
+    int existingMessages = 0, totalMessages = 0;
+    int i, j;
+
+    loadFromMessagesFile(oldMessages, &existingMessages);
+
+    totalMessages = existingMessages + numNewMessages;
+
+    printf("Total Count: %d, Existing count: %d, Old count: %d", totalMessages, existingMessages, numNewMessages);
+
+    // Open in write mode to rewrite everything
+    pFile = fopen(MESSAGESFILE, "wt");
+    if (pFile == NULL) {
+        printf("Error writing to %s\n", MESSAGESFILE);
+        return;
+    }
+
+    // Write total message count
+    fprintf(pFile, "%d\n", totalMessages);
+
+    // Write old messages
+    for (i = 0; i < existingMessages; i++) {
+        fprintf(pFile, "%s-%s-%s-%d\n",
+                oldMessages[i].strSender,
+                oldMessages[i].strReceiver,
+                oldMessages[i].strSubject,
+                oldMessages[i].numLines);
+        for (j = 0; j < oldMessages[i].numLines; j++) {
+            fprintf(pFile, "%s\n", oldMessages[i].strMessageEntry[j]);
+        }
+    }
+
+    // Write new messages
+    for (i = 0; i < numNewMessages; i++) {
+        fprintf(pFile, "%s-%s-%s-%d\n",
+                newMessage[i].strSender,
+                newMessage[i].strReceiver,
+                newMessage[i].strSubject,
+                newMessage[i].numLines);
+        for (j = 0; j < newMessage[i].numLines; j++) {
+        fprintf(pFile, "%s\n", newMessage[i].strMessageEntry[j]);
+    }
+    }
+    fclose(pFile);
+}
+
 void composePersonalMessage(char sender[21], messageTag newMessage[MAX_MESSAGES],int *numMessages) { 
 	String strTemp; // Place inputs here for safekeeping
 	messageTag messageTemp;
 	int bEnd = 0, numLines = 0;
 	
-	system ("cls");
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
 	printf ("Creating a personal message!\n\n");
 	
 	//Input receiver
@@ -81,7 +135,7 @@ void composePersonalMessage(char sender[21], messageTag newMessage[MAX_MESSAGES]
 	clean(messageTemp.strSubject);
 	
 	printf("Write your message below. Type \"END\" to finish writing.\n\n");
-
+    memset(newMessage[*numMessages].strMessageEntry, 0, sizeof(newMessage[*numMessages].strMessageEntry));
     // Get multiple lines for the message body
     while (!bEnd) {
         fgets(strTemp, sizeof(strTemp), stdin);
@@ -95,44 +149,43 @@ void composePersonalMessage(char sender[21], messageTag newMessage[MAX_MESSAGES]
         }
 	}
 
-	// Save sender, receiver, and subject in the message
-// Check if the message array is full before adding a new message
 	if (*numMessages < MAX_MESSAGES) {
-	    strcpy(newMessage[*numMessages].strSender, sender);
-	    strcpy(newMessage[*numMessages].strReceiver, messageTemp.strReceiver);
-	    strcpy(newMessage[*numMessages].strSubject, messageTemp.strSubject);
-	    newMessage[*numMessages].numLines = numLines;
-	    (*numMessages)++;
-	} else {
-	    printf("Message storage is full. Cannot add more messages.\n");
-	}
+        // Prepare a single message to pass into the save function
+        messageTag temp[1];
+        strcpy(temp[0].strSender, sender);
+        strcpy(temp[0].strReceiver, messageTemp.strReceiver);
+        strcpy(temp[0].strSubject, messageTemp.strSubject);
+        temp[0].numLines = numLines;
 
-}
-
-void saveToMessagesFile(messageTag newMessage[MAX_MESSAGES], int numMessages) {
-    FILE *pFile = fopen(MESSAGESFILE, "wt");
-    int i, j;
-
-    if (pFile != NULL) {
-        // Save the number of messages at the start
-        fprintf(pFile, "%d\n", numMessages);
-
-        for (i = 0; i < numMessages; i++) {
-            // Write sender, receiver, subject, and numLines on one line
-            fprintf(pFile, "%s-%s-%s-%d\n",
-                    newMessage[i].strSender,
-                    newMessage[i].strReceiver,
-                    newMessage[i].strSubject,
-                    newMessage[i].numLines);
-
-            // Save the message body
-            for (j = 0; j < newMessage[i].numLines; j++) {
-                fprintf(pFile, "%s\n", newMessage[i].strMessageEntry[j]);
-            }
+        for (int i = 0; i < numLines; i++) {
+            strcpy(temp[0].strMessageEntry[i], newMessage[*numMessages].strMessageEntry[i]);
         }
-        fclose(pFile);
+
+        // Save only the one new message
+        saveToMessagesFile(temp, 1);
+
+        // Add to main array
+        newMessage[*numMessages] = temp[0];
+        (*numMessages)++;
     } else {
-        printf("Error generating %s\n", MESSAGESFILE);
+        printf("Message storage is full. Cannot add more messages.\n");
+    }
+    
+    printf("\n====================\n");
+    printf("📨 All Messages in Memory:\n");
+    printf("====================\n");
+
+    for (int i = 0; i < *numMessages; i++) {
+        printf("📧 Message #%d\n", i + 1);
+        printf("From    : %s\n", newMessage[i].strSender);
+        printf("To      : %s\n", newMessage[i].strReceiver);
+        printf("Subject : %s\n", newMessage[i].strSubject);
+        printf("Lines   : %d\n", newMessage[i].numLines);
+        printf("Message :\n");
+        for (int j = 0; j < newMessage[i].numLines; j++) {
+            printf("  %s\n", newMessage[i].strMessageEntry[j]);
+        }
+        printf("--------------------\n");
     }
 }
 
@@ -200,7 +253,7 @@ int main() {
 				break;
 		
 		    case 2:
-			    saveToMessagesFile(messages, numMessages);
+			    // saveToMessagesFile(messages, numMessages);
 			    printf("\nExiting... Goodbye!\n");
 			    bEnd = 1;
 			    break;

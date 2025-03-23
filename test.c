@@ -187,7 +187,6 @@ void viewAnnouncements(messageTag SavedMessages[MAX_MESSAGES], int totalMessages
     for (i = 0; i < *AnnounceCount; i++) {
         printMessageDetails(Announcements[i], i);
     }
-    
 }
 
 void viewReceivedMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag Received[MAX_MESSAGES], int *receiveCount) {
