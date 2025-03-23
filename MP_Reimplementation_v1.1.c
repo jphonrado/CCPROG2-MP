@@ -2,11 +2,15 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define MAX_CONNECTIONS 10
+#define MAX_CHAR_USER 21
+#define MAX_CHAR_PASS 21
 #define MAX_CHAR_MESSAGE 1000 // Maximum no. of Characters for each message / announcement
 #define MAX_NO_MESSAGE 1000 //Maximum no. of Messages that can exist in the program
 #define MAX_USERS 30 //Maximum no. of Users that can be registered
 #define MAX_CHAR_PASS 21 // Maximum no. of characters for password
 #define MAX_CHAR_SEC 101 //Maximum number of Characters for Security Questions & Answers
+
 
 #define USERSFILE "UsersFile.txt"
 #define ADMINPASSFILE "AdminPassFile.txt"
@@ -14,12 +18,14 @@
 typedef char String[101];
 
 typedef struct {
-    char name[21];
-    char username[21];
+	int numConnections;
+    char name[MAX_CHAR_USER];
+    char username[MAX_CHAR_USER];
     char password[MAX_CHAR_PASS];
     char securityQuestion[MAX_CHAR_SEC];
     char securityAnswer[MAX_CHAR_SEC];
     char description[101]; 
+    char connections[MAX_CONNECTIONS][MAX_CHAR_USER];
 } UserInfo;
 
 
@@ -83,6 +89,196 @@ int getValidChoice(int lower, int upper) {
 /*********************
 USER MODULE FUNCTIONS
 **********************/
+void viewUserConnections(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) {
+    int i, j, found = 0;
+
+    system("cls");
+    printf("Users Who Have You in Their Connections:\n\n");
+
+    for (i = 0; i < numUsers; i++) {
+        if (i != userIndex) {  // Skip checking current user
+            for (j = 0; j < newUser[i].numConnections; j++) {
+                if (strcmp(newUser[i].connections[j], newUser[userIndex].username) == 0) {
+                    printf("- %s\n", newUser[i].username);
+                    found = 1;
+                }
+            }
+        }
+    }
+
+    if (!found) {
+        printf("No users have added you to their connections.\n");
+    }
+
+    system("pause");
+}
+
+void removePersonalConnection(UserInfo newUser[MAX_USERS], int userIndex) {
+    char connectionName[MAX_CHAR_USER];
+    int i, j, connectionIndex = -1, found = 0;
+
+    system("cls");
+    printf("Remove Personal Connection\n\n");
+
+    if (newUser[userIndex].numConnections > 0) {
+        printf("Your Current Connections:\n");
+        for (i = 0; i < newUser[userIndex].numConnections; i++) {
+            printf("%d. %s\n", i + 1, newUser[userIndex].connections[i]);
+        }
+
+        printf("\nEnter the username to remove: ");
+        fgets(connectionName, sizeof(connectionName), stdin);
+        clean(connectionName);
+
+        // Check if the connection exists
+        for (i = 0; i < newUser[userIndex].numConnections; i++) {
+            if (strcmp(newUser[userIndex].connections[i], connectionName) == 0) {
+                connectionIndex = i;
+                found = 1;
+            }
+        }
+
+        // If connection found, proceed with removal
+        if (found) {
+            for (j = connectionIndex; j < newUser[userIndex].numConnections - 1; j++) {
+                strcpy(newUser[userIndex].connections[j], newUser[userIndex].connections[j + 1]);
+            }
+            newUser[userIndex].numConnections--;
+            printf("Connection removed successfully!\n");
+        } 
+        else {
+            printf("User not found in your personal connections.\n");
+        }
+    } 
+    else {
+        printf("You have no personal connections to remove.\n");
+    }
+
+    system("pause");
+}
+
+void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex) {
+    int i, hasConnections = 0;
+
+    system("cls");
+    printf("Your Personal Connections:\n\n");
+
+    // Check if the user has any connections
+    if (newUser[userIndex].numConnections > 0) {
+        hasConnections = 1;  // User has connections
+        for (i = 0; i < newUser[userIndex].numConnections; i++) {
+            printf("%d. %s\n", i + 1, newUser[userIndex].connections[i]);
+        }
+    }
+
+    if (!hasConnections) {
+        printf("You have no personal connections.\n");
+    }
+
+    system("pause");
+}
+
+void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) {
+    char connectionName[MAX_CHAR_USER];
+    int connectionIndex = -1, alreadyConnected = 0, validConnection = 0;
+    int i, j;
+
+    printf("\nEnter the username to add: ");
+    fgets(connectionName, sizeof(connectionName), stdin);
+    clean(connectionName);
+
+    // Check if the username matches the current user (cannot add yourself)
+    if (strcmp(connectionName, newUser[userIndex].username) == 0) {
+        printf("You cannot add yourself as a personal connection.\n");
+        validConnection = 0;  // Prevent proceeding
+    } else {
+        // Find if the username exists in the list of users
+        for (i = 0; i < numUsers; i++) {
+            if (strcmp(newUser[i].username, connectionName) == 0) {
+                connectionIndex = i;
+                validConnection = 1;  // User found, connection is valid
+            }
+        }
+    }
+
+    // Check if the user exists and is not the current user
+    if (validConnection) {
+        // Check if the user is already connected
+        for (j = 0; j < newUser[userIndex].numConnections && !alreadyConnected; j++) {
+            if (strcmp(newUser[userIndex].connections[j], connectionName) == 0) {
+                alreadyConnected = 1;
+            }
+        }
+
+        // Proceed to add connection if not already connected
+        if (!alreadyConnected) {
+            if (newUser[userIndex].numConnections < MAX_CONNECTIONS) {
+                strcpy(newUser[userIndex].connections[newUser[userIndex].numConnections], connectionName);
+                newUser[userIndex].numConnections++;
+                printf("Connection added successfully!\n");
+            } else {
+                printf("You have reached the maximum number of personal connections.\n");
+            }
+        } else {
+            printf("User is already in your personal connections.\n");
+        }
+    } 
+    else if (connectionIndex == -1) {
+        printf("Invalid username or user not found.\n");
+    }
+
+    system("pause");
+}
+
+void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
+    int userIndex = -1, done = 0, nChoice;
+
+    // Find the current user index
+    for (int i = 0; i < numUsers && userIndex == -1; i++) {
+        if (strcmp(newUser[i].username, username) == 0) {
+            userIndex = i;
+        }
+    }
+
+    // Check if the user was found
+    if (userIndex != -1) {
+		while (!done) {
+	        system("cls");
+	        printf("Modify Personal Connections for %s\n\n", newUser[userIndex].name);
+	        printf("[1] Add a Personal Connection\n");
+	        printf("[2] View Personal Connections\n");
+	        printf("[3] Remove a Personal Connection\n");
+	        printf("[4] View Users Who Have You in Their Connections\n");
+	        printf("[5] Back\n");
+	        printf("\nEnter your choice: ");
+			
+			nChoice = getValidChoice(1,5);
+	
+	        switch (nChoice) {
+	            case 1:
+	                addPersonalConnection(newUser, numUsers, userIndex);
+	                break;
+	            case 2:
+	                viewPersonalConnections(newUser, userIndex);
+	                break;
+	            case 3:
+	                removePersonalConnection(newUser, userIndex);
+	                break;
+	            case 4:
+	                viewUserConnections(newUser, numUsers, userIndex);
+	                break;
+	            case 5:
+	                done = 1;  // Exit and return to the main menu
+	                break;
+	                
+		    }	
+	    }
+	}
+    else {
+		printf("User not found.\n");
+	    system("pause");
+	}
+}
 
 void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
     UserInfo userTemp;
@@ -316,7 +512,7 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
                 modifyAccountSecurity(newUser, numUsers, username);
                 break;
             case 7:
-                //modifyPersonalConnections(newUser, numUsers, username);
+                modifyPersonalConnectionsPage(newUser, numUsers, username);
                 break;
             case 8:
                 //browseUsers(newUser, numUsers);
@@ -471,7 +667,7 @@ void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers) {
 
         // Loop through all users and parse their information
         while (fgets(strTemp, sizeof(strTemp), pFile) != NULL && i < *numUsers) {
-            // Ensure all 6 fields are read correctly
+            
             if (sscanf(strTemp, "%[^-]-%[^-]-%[^-]-%[^-]-%[^-]-%[^\n]",
                        newUser[i].name,
                        newUser[i].username,
