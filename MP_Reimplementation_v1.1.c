@@ -37,6 +37,7 @@ int getValidChoice(int lower, int upper);
 void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers);
 void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers);
 int isUserValid(String username, String password, UserInfo newUser[MAX_USERS], int numUsers);
+int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], int numUsers);
 void Login(UserInfo newUser[MAX_USERS], int *numUsers);
 void LoginPage(UserInfo newUser[MAX_USERS], int *numUsers);
 int isUsernameTaken(UserInfo newUser[MAX_USERS], int numUsers, char *username);
@@ -53,8 +54,14 @@ void AdminModulePage(char adminPass[MAX_CHAR_PASS]);
 /********************************************************************************************/
 
 /***********************************USER MODULE FUNCTIONS************************************/
-void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username);
-void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username);
+void viewUserConnections(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 7.4
+void removePersonalConnection(UserInfo newUser[MAX_USERS], int userIndex); // 7.3
+void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex); // 7.2
+void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 7.1
+void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex); //  7
+void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex); // 6
+void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex); //5
+void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex);
 /********************************************************************************************/
 
 /*****************
@@ -85,11 +92,140 @@ int getValidChoice(int lower, int upper) {
     return choice;
 }
 
-
 /*********************
 USER MODULE FUNCTIONS
 **********************/
-void viewUserConnections(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) {
+
+void addUserConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, int targetIndex) { // 8.4
+    // Check if the user is trying to add themselves
+    if (userIndex == targetIndex) {
+        printf("You cannot add yourself as a personal connection.\n");
+    } 
+    else {
+        // Call the existing function to add the connection
+        addPersonalConnection(newUser, numUsers, userIndex);
+    }
+
+    system("pause");
+}
+
+
+void viewUserPage(UserInfo newUser[MAX_USERS], int numUsers, int targetIndex, int userIndex) { // 8.3
+	int bGoBack = 0;
+	do {
+		system("cls");
+	    printf("Viewing %s's Profile:\n\n", newUser[targetIndex].username);
+	    printf("Name: %s\n", newUser[targetIndex].name);
+	
+	    if (strlen(newUser[targetIndex].description) == 0) {
+	        printf("Description: DEFAULT USER\n\n");
+	    } 
+		else {
+	        printf("Description: %s\n\n", newUser[targetIndex].description);
+	    }
+	
+    // Display options for interaction
+	    printf("[1] - Add as Personal Connection\n");
+	    printf("[2] - Send Private Message\n");
+	    printf("[3] - Go back\n\n");
+	
+	    int choice = getValidChoice(1, 3);
+	
+	    if (choice == 1) {
+	        addUserConnection(newUser, numUsers, userIndex, targetIndex);
+	    } 
+	    else if (choice == 2) {
+	        //sendPrivateMessage(newUser, numUsers, targetIndex);
+	    }
+		else if (choice ==3)
+			bGoBack = 1;
+	} while (!bGoBack);
+}
+
+void filterUsersByName(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 8.2
+    char searchName[51];
+    int i, found = 0;
+	int nChoice, targetIndex;
+    system("cls");
+    printf("Enter the name to search: ");
+    scanf(" %[^\n]", searchName);
+
+    printf("\nFiltered Results:\n\n");
+
+    for (i = 0; i < numUsers; i++) {
+        if (strstr(newUser[i].name, searchName) != NULL) {
+            printf("[%d] Username: %s\n", i + 1, newUser[i].username);
+            printf("    Name: %s\n", newUser[i].name);
+
+            if (strlen(newUser[i].description) == 0) {
+                printf("    Description: DEFAULT USER\n\n");
+            } else {
+                printf("    Description: %s\n\n", newUser[i].description);
+            }
+            
+            found = 1;
+        }
+    }
+
+    if (!found) {
+        printf("No users found matching '%s'.\n\n", searchName);
+    }
+
+    printf("[0] - Go back\n\n");
+    nChoice = getValidChoice(0, numUsers);
+    targetIndex = nChoice - 1;
+    if (nChoice != 0) {
+        viewUserPage(newUser, numUsers, targetIndex, userIndex);  
+    }
+}
+
+void viewAllUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 8.1
+    int i, nChoice;
+	int targetIndex;
+    system("cls");
+    printf("Users Registered in The Application:\n\n");
+
+    for (i = 0; i < numUsers; i++) {
+        printf("[%d] Username: %s\n", i + 1, newUser[i].username);
+        printf("    Name: %s\n", newUser[i].name);
+
+        if (strlen(newUser[i].description) == 0) {
+            printf("    Description: DEFAULT USER\n\n");
+        } else {
+            printf("    Description: %s\n\n", newUser[i].description);
+        }
+    }
+
+    printf("[0] - Go back\n\n");
+    nChoice = getValidChoice(0, numUsers);
+    targetIndex = nChoice - 1;
+    if (nChoice != 0) {
+        viewUserPage(newUser, numUsers, targetIndex, userIndex);  
+    }
+}
+
+void browseUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 8
+    int nChoice;
+    
+    do {
+        system("cls");
+        printf("Browse Users:\n");
+        printf("[1] - View All Users\n");
+        printf("[2] - Search by Name\n");
+        printf("[3] - Go back\n\n");
+        
+        nChoice = getValidChoice(1, 3);
+
+        if (nChoice == 1) {
+            viewAllUsers(newUser, numUsers, userIndex);
+        } 
+        else if (nChoice == 2) {
+            filterUsersByName(newUser, numUsers, userIndex);
+        }
+    } while (nChoice != 3);
+}
+
+void viewUserConnections(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 7.4
     int i, j, found = 0;
 
     system("cls");
@@ -113,7 +249,7 @@ void viewUserConnections(UserInfo newUser[MAX_USERS], int numUsers, int userInde
     system("pause");
 }
 
-void removePersonalConnection(UserInfo newUser[MAX_USERS], int userIndex) {
+void removePersonalConnection(UserInfo newUser[MAX_USERS], int userIndex) { // 7.3
     char connectionName[MAX_CHAR_USER];
     int i, j, connectionIndex = -1, found = 0;
 
@@ -157,7 +293,7 @@ void removePersonalConnection(UserInfo newUser[MAX_USERS], int userIndex) {
     system("pause");
 }
 
-void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex) {
+void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex) { // 7.2
     int i, hasConnections = 0;
 
     system("cls");
@@ -178,7 +314,7 @@ void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex) {
     system("pause");
 }
 
-void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) {
+void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 7.1
     char connectionName[MAX_CHAR_USER];
     int connectionIndex = -1, alreadyConnected = 0, validConnection = 0;
     int i, j;
@@ -191,7 +327,8 @@ void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIn
     if (strcmp(connectionName, newUser[userIndex].username) == 0) {
         printf("You cannot add yourself as a personal connection.\n");
         validConnection = 0;  // Prevent proceeding
-    } else {
+    } 
+	else {
         // Find if the username exists in the list of users
         for (i = 0; i < numUsers; i++) {
             if (strcmp(newUser[i].username, connectionName) == 0) {
@@ -230,15 +367,8 @@ void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIn
     system("pause");
 }
 
-void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
-    int userIndex = -1, done = 0, nChoice;
-
-    // Find the current user index
-    for (int i = 0; i < numUsers && userIndex == -1; i++) {
-        if (strcmp(newUser[i].username, username) == 0) {
-            userIndex = i;
-        }
-    }
+void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) { // 7
+    int done = 0, nChoice;
 
     // Check if the user was found
     if (userIndex != -1) {
@@ -249,8 +379,7 @@ void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, ch
 	        printf("[2] View Personal Connections\n");
 	        printf("[3] Remove a Personal Connection\n");
 	        printf("[4] View Users Who Have You in Their Connections\n");
-	        printf("[5] Back\n");
-	        printf("\nEnter your choice: ");
+	        printf("[5] Back\n\n");
 			
 			nChoice = getValidChoice(1,5);
 	
@@ -280,17 +409,10 @@ void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, ch
 	}
 }
 
-void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
+void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) { // 6
     UserInfo userTemp;
     char currentPassword[MAX_CHAR_PASS];
-    int i, userIndex = -1, verified = 0, done = 0;
-
-    // Find user by username
-    for (i = 0; i < numUsers && userIndex == -1; i++) {
-        if (strcmp(newUser[i].username, username) == 0) {
-            userIndex = i;
-        }
-    }
+    int i, verified = 0, done = 0;
 
     // Check if the user was found
     if (userIndex != -1) {
@@ -374,19 +496,13 @@ void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *user
     }
 }
 
-void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
+void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) {// 5
     UserInfo userTemp;
     char tempName[21], tempDescription[101];
     char passwordCheck[MAX_CHAR_PASS];
-    int i, userIndex = -1, verified = 0, done = 0, inputValid = 0;
+    int i, verified = 0, done = 0, inputValid = 0;
 	clean(username);
 
-    // Find user by username
-    for (i = 0; i < numUsers && userIndex == -1; i++) {
-        if (!strcmp(newUser[i].username, username)) {
-            userIndex = i;
-        }
-    }
 
     // Check if the user was found
     if (userIndex != -1) {
@@ -472,7 +588,7 @@ void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *use
     }
 }
 
-void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
+void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) {
     int nChoice, bQuit = 0, bLogout = 0;
 
     do {
@@ -506,16 +622,16 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
                 //viewAnnouncements();
                 break;
             case 5:
-                modifyPersonalContents(newUser, numUsers, username);
+                modifyPersonalContents(newUser, numUsers, username, userIndex);
                 break;
             case 6:
-                modifyAccountSecurity(newUser, numUsers, username);
+                modifyAccountSecurity(newUser, numUsers, username, userIndex);
                 break;
             case 7:
-                modifyPersonalConnectionsPage(newUser, numUsers, username);
+                modifyPersonalConnectionsPage(newUser, numUsers, username, userIndex);
                 break;
             case 8:
-                //browseUsers(newUser, numUsers);
+                browseUsers(newUser, numUsers, userIndex);
                 break;
             case 9:
                 printf("\nLogging out...\n");
@@ -690,15 +806,24 @@ void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers) {
 int isUserValid(String username, String password, UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not 
     for (int i = 0; i < numUsers; i++) {
         if (strcmp(newUser[i].username, username) == 0 && strcmp(newUser[i].password, password) == 0) {
-            return 1; // Valid user
+            return 1; // Found valid user
         }
     }
     return 0; // Invalid user
 }
 
+int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not 
+    for (int i = 0; i < numUsers; i++) {
+        if (strcmp(newUser[i].username, username) == 0 && strcmp(newUser[i].password, password) == 0) {
+            return i; //Returns the found user index
+        }
+    }
+    return -1; // User index not found
+}
 void Login(UserInfo newUser[MAX_USERS], int *numUsers) {
     String nameInput;
     String passInput;
+    int userIndex;
     int attempts = 3;
     int bGoBack = 0;
 
@@ -710,7 +835,8 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers) {
         fgets(nameInput, sizeof(nameInput), stdin);
         clean(nameInput);
         bGoBack = strcmp(nameInput, "back") == 0;
-
+		
+		
         if (!bGoBack) {
             printf("Enter Password: ");
             fgets(passInput, sizeof(passInput), stdin);
@@ -719,7 +845,8 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers) {
             if (isUserValid(nameInput, passInput, newUser, *numUsers)) {
                 printf("Login successful!\n");
                 system("pause");
-				userModulePage(newUser, *numUsers, nameInput);
+                userIndex = getUserIndex(nameInput, passInput, newUser, *numUsers);
+				userModulePage(newUser, *numUsers, nameInput, userIndex);
             } 
             else {
                 attempts--;
