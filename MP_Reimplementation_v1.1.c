@@ -84,10 +84,10 @@ int getValidChoice(int lower, int upper) {
 USER MODULE FUNCTIONS
 **********************/
 
-void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
-    char tempName[21], tempDescription[101];
-    char passwordCheck[MAX_CHAR_PASS];
-    int i, userIndex = -1, verified = 0, done = 0, inputValid = 0;
+void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
+    UserInfo userTemp;
+    char currentPassword[MAX_CHAR_PASS];
+    int i, userIndex = -1, verified = 0, done = 0;
 
     // Find user by username
     for (i = 0; i < numUsers && userIndex == -1; i++) {
@@ -98,13 +98,117 @@ void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *use
 
     // Check if the user was found
     if (userIndex != -1) {
+        // Copy current user details to userTemp
+        userTemp = newUser[userIndex];
+
+        while (!done) {
+            system("cls");
+            printf("Modify Account Security (Enter 'back' to cancel)\n\n");
+
+            // Verify current password before allowing changes
+            printf("Enter your current password: ");
+            fgets(currentPassword, sizeof(currentPassword), stdin);
+            clean(currentPassword);
+
+            if (strcmp(currentPassword, "back") == 0) {
+                done = 1;
+            } else if (strcmp(currentPassword, userTemp.password) == 0) {
+                verified = 1;
+            } else {
+                printf("Incorrect password. Please try again.\n");
+                system("pause");
+            }
+
+            if (verified) {
+                system("cls");
+                printf("Modify Account Security (Enter 'back' to cancel)\n\n");
+
+                // Input new password
+                printf("Enter New Password: ");
+                fgets(userTemp.password, sizeof(userTemp.password), stdin);
+                clean(userTemp.password);
+
+                if (strcmp(userTemp.password, "back") == 0) {
+                    done = 1;
+                } else {
+                    char confirmPassword[MAX_CHAR_PASS];
+                    printf("Re-enter New Password: ");
+                    fgets(confirmPassword, sizeof(confirmPassword), stdin);
+                    clean(confirmPassword);
+
+                    if (strcmp(confirmPassword, "back") == 0) {
+                        done = 1;
+                    } else if (strcmp(userTemp.password, confirmPassword) != 0) {
+                        printf("Passwords do not match. Please try again.\n");
+                        system("pause");
+                        continue;
+                    }
+
+                    // Input new security question and answer
+                    printf("\nEnter New Security Question: ");
+                    fgets(userTemp.securityQuestion, sizeof(userTemp.securityQuestion), stdin);
+                    clean(userTemp.securityQuestion);
+
+                    if (strcmp(userTemp.securityQuestion, "back") == 0) {
+                        done = 1;
+                    } else {
+                        printf("Enter New Security Answer: ");
+                        fgets(userTemp.securityAnswer, sizeof(userTemp.securityAnswer), stdin);
+                        clean(userTemp.securityAnswer);
+
+                        if (strcmp(userTemp.securityAnswer, "back") == 0) {
+                            done = 1;
+                        } else {
+                            // Apply changes to the original user
+                            newUser[userIndex] = userTemp;
+
+                            // Save changes to file
+                            saveToUsersFile(newUser, numUsers);
+                            printf("Security settings updated successfully!\n");
+                            done = 1;
+                            system("pause");
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        printf("User not found.\n");
+        system("pause");
+    }
+}
+
+void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
+    UserInfo userTemp;
+    char tempName[21], tempDescription[101];
+    char passwordCheck[MAX_CHAR_PASS];
+    int i, userIndex = -1, verified = 0, done = 0, inputValid = 0;
+	clean(username);
+
+    // Find user by username
+    for (i = 0; i < numUsers && userIndex == -1; i++) {
+        if (!strcmp(newUser[i].username, username)) {
+            userIndex = i;
+        }
+    }
+
+    // Check if the user was found
+    if (userIndex != -1) {
+        // Copy current user details to userTemp
+        userTemp = newUser[userIndex];
+
         while (!done) {
             system("cls");
             printf("Modify Personal Contents (Enter 'back' to cancel)\n\n");
 
             // Show current details
-            printf("Current Name: %s\n", newUser[userIndex].name);
-            printf("Current Description: %s\n", strcmp(newUser[userIndex].description, "DEFAULT USER") == 0 ? "DEFAULT USER" : newUser[userIndex].description);
+            printf("Current Name: %s\n", userTemp.name);
+            if (strcmp(userTemp.description, "DEFAULT USER") == 0) {
+                printf("Current Description: DEFAULT USER\n");
+            } 
+            else {
+                printf("Current Description: %s\n", userTemp.description);
+            }
 
             // Input new name
             printf("\nEnter New Name: ");
@@ -114,7 +218,8 @@ void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *use
             // Check if user wants to go back
             if (strcmp(tempName, "back") == 0) {
                 done = 1;
-            } else {
+            } 
+            else {
                 // Input new description
                 printf("Enter New Description: ");
                 fgets(tempDescription, sizeof(tempDescription), stdin);
@@ -135,9 +240,10 @@ void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *use
                 clean(passwordCheck);
 
                 // Validate password
-                if (strcmp(passwordCheck, newUser[userIndex].password) == 0) {
+                if (strcmp(passwordCheck, userTemp.password) == 0) {
                     verified = 1;
-                } else {
+                } 
+                else {
                     printf("Incorrect password. Please try again.\n");
                     system("pause");
                 }
@@ -145,12 +251,16 @@ void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *use
                 // Apply changes if verified
                 if (verified) {
                     // Update name and description
-                    strcpy(newUser[userIndex].name, tempName);
+                    strcpy(userTemp.name, tempName);
                     if (strlen(tempDescription) == 0) {
-                        strcpy(newUser[userIndex].description, "DEFAULT USER");
-                    } else {
-                        strcpy(newUser[userIndex].description, tempDescription);
+                        strcpy(userTemp.description, "DEFAULT USER");
+                    } 
+                    else {
+                        strcpy(userTemp.description, tempDescription);
                     }
+
+                    // Apply changes to original user
+                    newUser[userIndex] = userTemp;
 
                     // Save changes and exit
                     saveToUsersFile(newUser, numUsers);
@@ -159,7 +269,8 @@ void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *use
                 }
             }
         }
-    } else {
+    } 
+    else {
         printf("User not found.\n");
         system("pause");
     }
@@ -202,7 +313,7 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
                 modifyPersonalContents(newUser, numUsers, username);
                 break;
             case 6:
-                //modifyAccountSecurity(newUser, numUsers, username);
+                modifyAccountSecurity(newUser, numUsers, username);
                 break;
             case 7:
                 //modifyPersonalConnections(newUser, numUsers, username);
@@ -465,6 +576,7 @@ void LoginPage(UserInfo newUser[MAX_USERS], int *numUsers) { //Login Page UI
     } while (!bQuit);
 }
 
+
 /**************
 ADMIN FUNCTIONS
 ***************/
@@ -675,6 +787,7 @@ int main() {
 	
 	return 0;
 }
+
 
 
 
