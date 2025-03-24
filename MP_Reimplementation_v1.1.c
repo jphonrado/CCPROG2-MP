@@ -109,7 +109,6 @@ void addUserConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex,
     system("pause");
 }
 
-
 void viewUserPage(UserInfo newUser[MAX_USERS], int numUsers, int targetIndex, int userIndex) { // 8.3
 	int bGoBack = 0;
 	do {
@@ -820,6 +819,7 @@ int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], 
     }
     return -1; // User index not found
 }
+
 void Login(UserInfo newUser[MAX_USERS], int *numUsers) {
     String nameInput;
     String passInput;
