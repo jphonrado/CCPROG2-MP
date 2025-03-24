@@ -2,18 +2,24 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define MAX_SUBJECT 101
 #define MAX_CONNECTIONS 10
 #define MAX_CHAR_USER 21
 #define MAX_CHAR_PASS 21
 #define MAX_CHAR_MESSAGE 1000 // Maximum no. of Characters for each message / announcement
-#define MAX_NO_MESSAGE 1000 //Maximum no. of Messages that can exist in the program
+#define MAX_MESSAGES 1000 //Maximum no. of Messages that can exist in the program
 #define MAX_USERS 30 //Maximum no. of Users that can be registered
 #define MAX_CHAR_PASS 21 // Maximum no. of characters for password
 #define MAX_CHAR_SEC 101 //Maximum number of Characters for Security Questions & Answers
-
+#define MAX_LINES 1000
+#define MAX_SENDER 21
+#define MAX_RECEIVER_NAME 21
+#define MAX_RECEIVERS 10
+#define MAX_SUBJECT 101
 
 #define USERSFILE "UsersFile.txt"
 #define ADMINPASSFILE "AdminPassFile.txt"
+#define MESSAGESFILE "MessagesFile.txt"
 
 typedef char String[101];
 
@@ -28,6 +34,14 @@ typedef struct {
     char connections[MAX_CONNECTIONS][MAX_CHAR_USER];
 } UserInfo;
 
+typedef struct { 
+	int numLines;
+    int numReceivers;
+    char strSender[MAX_SENDER];
+    char strReceivers[MAX_RECEIVERS][MAX_RECEIVER_NAME];
+    char strSubject[MAX_SUBJECT];
+    char **strMessageEntry;
+} messageTag;
 
 /***********Utility Functions****************/
 void clean(String strTemp);
@@ -54,6 +68,24 @@ void AdminModulePage(char adminPass[MAX_CHAR_PASS]);
 /********************************************************************************************/
 
 /***********************************USER MODULE FUNCTIONS************************************/
+/*-----------------------------------Messaging Functions------------------------------------*/
+void splitReceivers(char *receiverBuffer, char receiversArray[MAX_RECEIVERS][MAX_RECEIVER_NAME], int *numReceivers);
+void freeMessage(messageTag *msg);
+void freeAllMessages(messageTag msgs[MAX_MESSAGES], int count);
+int isValidReceiver(char receiver[], UserInfo LoadedUsers[MAX_USERS], int numUsers);
+void loadAllMessagesFiles(messageTag Messages[MAX_MESSAGES], int *numMessages);
+void printMessageDetails(messageTag message, int index);
+void viewSentMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag SentMessages[MAX_MESSAGES], int *sentCount); // 3
+void viewAnnouncements(messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag Announcements[MAX_MESSAGES], int *AnnounceCount); // 4
+void viewReceivedMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag Received[MAX_MESSAGES], int *receiveCount, UserInfo LoadedUsers[MAX_USERS], int numUsers); // 2
+void saveMessagesToFile(messageTag SavedMessages[MAX_MESSAGES], int savedCount);
+void composeMessage(char user[], messageTag SavedMessages[MAX_MESSAGES], int *savedCount, UserInfo LoadedUsers[MAX_USERS], int numUsers); // 1
+/*------------------------------------------------------------------------------------------*/
+void addUserConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, int targetIndex); // 8.4
+void viewUserPage(UserInfo newUser[MAX_USERS], int numUsers, int targetIndex, int userIndex); // 8.3
+void filterUsersByName(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 8.2
+void viewAllUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 8.1
+void browseUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 8
 void viewUserConnections(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 7.4
 void removePersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 7.3
 void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex); // 7.2
@@ -94,8 +126,355 @@ int getValidChoice(int lower, int upper) {
 
 /*********************
 USER MODULE FUNCTIONS
-**********************/
+*********************/
+/*--------------------------------------------------------------------------------------------------------------------------------*/
+// Messaging Functions
 
+void splitReceivers(char *receiverBuffer, char receiversArray[MAX_RECEIVERS][MAX_RECEIVER_NAME], int *numReceivers) {
+    *numReceivers = 0;
+    char *token = strtok(receiverBuffer, ",");
+
+    while (token != NULL && *numReceivers < MAX_RECEIVERS) {
+        clean(token); // Clean each receiver to trim spaces
+        strncpy(receiversArray[*numReceivers], token, MAX_RECEIVER_NAME - 1);
+        receiversArray[*numReceivers][MAX_RECEIVER_NAME - 1] = '\0';
+        (*numReceivers)++;
+        token = strtok(NULL, ",");
+    }
+}
+
+void freeMessage(messageTag *msg) {
+    int i = 0;
+    while (i < msg->numLines) {
+        free(msg->strMessageEntry[i]);
+        i++;
+    }
+    free(msg->strMessageEntry);
+}
+
+void freeAllMessages(messageTag msgs[MAX_MESSAGES], int count) {
+    int i = 0;
+    while (i < count) {
+        freeMessage(&msgs[i]);
+        i++;
+    }
+}
+
+int isValidReceiver(char receiver[], UserInfo LoadedUsers[MAX_USERS], int numUsers) {
+    int i;
+
+    // Check if receiver is "everyone" for announcements
+    clean(receiver);
+    if (strcasecmp(receiver, "everyone") == 0) {
+        return 1;  // Valid for announcements
+    }
+
+    // Check if the receiver is a valid user
+    for (i = 0; i < numUsers; i++) {
+        clean(LoadedUsers[i].username);
+        if (strcmp(LoadedUsers[i].username, receiver) == 0) {
+            return 1;  // Receiver found
+        }
+    }
+    
+    return 0;  // Receiver not found
+}
+
+void loadAllMessagesFiles(messageTag Messages[MAX_MESSAGES], int *numMessages) {
+    FILE *pFile = fopen(MESSAGESFILE, "rt");
+    String strTemp;
+    int i = 0, j;
+
+    *numMessages = 0;
+
+    if (pFile != NULL) {
+        fgets(strTemp, sizeof(strTemp), pFile);
+        *numMessages = atoi(strTemp);
+
+        while (i < *numMessages) {
+            fgets(strTemp, sizeof(strTemp), pFile);
+            clean(strTemp);
+
+            int numLines;
+            char receiverBuffer[101];
+            sscanf(strTemp, "%20[^|]|%100[^|]|%100[^|]|%d",
+                   Messages[i].strSender,
+                   receiverBuffer,
+                   Messages[i].strSubject,
+                   &numLines);
+
+            splitReceivers(receiverBuffer, Messages[i].strReceivers, &Messages[i].numReceivers);
+            Messages[i].numLines = numLines;
+
+            Messages[i].strMessageEntry = malloc(sizeof(char *) * numLines);
+            j = 0;
+            while (j < numLines) {
+                fgets(strTemp, sizeof(strTemp), pFile);
+                clean(strTemp);
+                Messages[i].strMessageEntry[j] = malloc(strlen(strTemp) + 1);
+                strcpy(Messages[i].strMessageEntry[j], strTemp);
+                j++;
+            }
+            i++;
+        }
+        fclose(pFile);
+    }
+}
+
+void printMessageDetails(messageTag message, int index) {
+    int j;
+	
+	system("cls");
+    printf("Message #%d\n", index + 1);
+    printf("From    : %s\n", message.strSender);
+
+    printf("To      : ");
+    j = 0;
+    while (j < message.numReceivers) {
+        printf("%s", message.strReceivers[j]);
+        if (j < message.numReceivers - 1) {
+            printf(", ");
+        }
+        j++;
+    }
+    printf("\n");
+
+    printf("Subject : %s\n", message.strSubject);
+    printf("Message :\n");
+    j = 0;
+    while (j < message.numLines) {
+        printf("  %s\n", message.strMessageEntry[j]);
+        j++;
+    }
+    printf("--------------------\n");
+    system("pause");
+}
+
+void viewSentMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag SentMessages[MAX_MESSAGES], int *sentCount) {
+    int i = 0, hasMessages = 0;
+	
+	system("cls");
+    *sentCount = 0;
+    if (totalMessages > 0) {
+        while (i < totalMessages) {
+            if (strcmp(SavedMessages[i].strSender, user) == 0) {
+                SentMessages[*sentCount] = SavedMessages[i];
+                (*sentCount)++;
+                hasMessages = 1;
+            }
+            i++;
+        }
+    }
+
+    if (hasMessages == 0) {
+        printf("No Mail Found.\n");
+    } else {
+        i = 0;
+        while (i < *sentCount) {
+            printMessageDetails(SentMessages[i], i);
+            i++;
+        }
+    }
+    system("pause");
+}
+
+void viewAnnouncements(messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag Announcements[MAX_MESSAGES], int *AnnounceCount) {
+    int i = 0, j, hasAnnouncements = 0;
+	
+	system("cls");
+    *AnnounceCount = 0;
+    if (totalMessages > 0) {
+        while (i < totalMessages) {
+            int isAnnouncement = 0;
+            j = 0;
+            while (j < SavedMessages[i].numReceivers) {
+                if (strcmp(SavedMessages[i].strReceivers[j], "everyone") == 0) {
+                    isAnnouncement = 1;
+                }
+                j++;
+            }
+            if (isAnnouncement == 1) {
+                Announcements[*AnnounceCount] = SavedMessages[i];
+                (*AnnounceCount)++;
+                hasAnnouncements = 1;
+            }
+            i++;
+        }
+    }
+
+    if (hasAnnouncements == 0) {
+        printf("No Announcements Found.\n");
+    } else {
+        i = 0;
+        while (i < *AnnounceCount) {
+            printMessageDetails(Announcements[i], i);
+            i++;
+        }
+    }
+    system("pause");
+}
+
+void viewReceivedMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag Received[MAX_MESSAGES], int *receiveCount, UserInfo LoadedUsers[MAX_USERS], int numUsers) {
+    int i, j, userFound = 0, hasMessages = 0;
+
+    system("cls");
+    *receiveCount = 0;
+
+    // Check if the user exists in LoadedUsers
+    for (i = 0; i < numUsers; i++) {
+        clean(LoadedUsers[i].username);
+        clean(user);
+
+        if (strcmp(LoadedUsers[i].username, user) == 0) {
+            userFound = 1;
+        }
+    }
+
+    // Proceed only if the user is valid
+    if (userFound == 1) {
+        if (totalMessages > 0) {
+            for (i = 0; i < totalMessages; i++) {
+                int isSentToUser = 0;
+
+                // Check if message has receivers
+                if (SavedMessages[i].numReceivers != 0) {
+                    // Check each receiver in the message
+                    for (j = 0; j < SavedMessages[i].numReceivers; j++) {
+                        clean(SavedMessages[i].strReceivers[j]);
+
+                        // Check if the message is sent to "everyone"
+                        if (strcasecmp(SavedMessages[i].strReceivers[j], "everyone") == 0) {
+                            isSentToUser = 1;  // Sent to all users
+                        }
+
+                        // Compare receiver with the logged-in user
+                        if (strcasecmp(SavedMessages[i].strReceivers[j], user) == 0) {
+                            isSentToUser = 1;  // Sent to the specific user
+                        }
+                    }
+
+                    // Save the message if sent to the user or everyone
+                    if (isSentToUser == 1) {
+                        Received[*receiveCount] = SavedMessages[i];
+                        (*receiveCount)++;
+                        hasMessages = 1;
+                    }
+                }
+            }
+
+            // Display messages if any
+            if (hasMessages == 0) {
+                printf("No Mail Found.\n");
+            } else {
+                for (i = 0; i < *receiveCount; i++) {
+                    printMessageDetails(Received[i], i);
+                }
+            }
+        } else {
+            printf("No messages available.\n");
+        }
+    } else {
+        printf("Error: User '%s' does not exist. Cannot view messages.\n", user);
+    }
+
+    system("pause");
+}
+
+void saveMessagesToFile(messageTag SavedMessages[MAX_MESSAGES], int savedCount) {
+    FILE *pFile = fopen(MESSAGESFILE, "wt");
+    int i = 0, j;
+
+    if (pFile != NULL) {
+        fprintf(pFile, "%d\n", savedCount);
+        while (i < savedCount) {
+            fprintf(pFile, "%s|", SavedMessages[i].strSender);
+            j = 0;
+            while (j < SavedMessages[i].numReceivers) {
+                fprintf(pFile, "%s", SavedMessages[i].strReceivers[j]);
+                if (j < SavedMessages[i].numReceivers - 1) {
+                    fprintf(pFile, ",");
+                }
+                j++;
+            }
+            fprintf(pFile, "|%s|%d\n", SavedMessages[i].strSubject, SavedMessages[i].numLines);
+
+            j = 0;
+            while (j < SavedMessages[i].numLines) {
+                fprintf(pFile, "%s\n", SavedMessages[i].strMessageEntry[j]);
+                j++;
+            }
+            i++;
+        }
+        fclose(pFile);
+    } else {
+        printf("Error opening %s for writing.\n", MESSAGESFILE);
+    }
+}
+
+void composeMessage(char user[], messageTag SavedMessages[MAX_MESSAGES], int *savedCount, UserInfo LoadedUsers[MAX_USERS], int numUsers) {
+    if (*savedCount >= MAX_MESSAGES) {
+        printf("Message limit reached. Cannot compose more messages.\n");
+    } else {
+        messageTag newMessage;
+        String strTemp;
+        int numLines = 0;
+        int done = 0;
+        int i, validReceivers = 1;
+
+        system("cls");
+        printf("Creating a Message!\n\n");
+        printf("Add a Subject: ");
+        fgets(newMessage.strSubject, sizeof(newMessage.strSubject), stdin);
+        clean(newMessage.strSubject);
+
+        strcpy(newMessage.strSender, user);
+        printf("Enter the Recepient. Separate with commas if multiple users or enter \"everyone\" to make an announcement\n\n");
+        printf("To: ");
+        fgets(strTemp, sizeof(strTemp), stdin);
+        clean(strTemp);
+        splitReceivers(strTemp, newMessage.strReceivers, &newMessage.numReceivers);
+		
+        // Check if all recipients are valid using isValidReceiver()
+        i = 0;
+        while (i < newMessage.numReceivers && validReceivers == 1) {
+            if (isValidReceiver(newMessage.strReceivers[i], LoadedUsers, numUsers) == 0) {
+                printf("\nError: User '%s' does not exist. Message not sent.\n", newMessage.strReceivers[i]);
+                validReceivers = 0; // Mark as invalid and prevent message sending
+            }
+            i++;
+        }
+
+        // Proceed only if all recipients are valid
+        if (validReceivers == 1) {
+            newMessage.strMessageEntry = malloc(sizeof(char *) * MAX_LINES);
+
+            printf("Write your message. Type 'END' on a new line to finish:\n");
+            while (!done && numLines < MAX_LINES) {
+                fgets(strTemp, sizeof(strTemp), stdin);
+                clean(strTemp);
+                if (strcmp(strTemp, "END") == 0) {
+                    done = 1;
+                } else {
+                    newMessage.strMessageEntry[numLines] = malloc(strlen(strTemp) + 1);
+                    strcpy(newMessage.strMessageEntry[numLines], strTemp);
+                    numLines++;
+                }
+            }
+            newMessage.numLines = numLines;
+
+            // Save the message
+            SavedMessages[*savedCount] = newMessage;
+            (*savedCount)++;
+
+            saveMessagesToFile(SavedMessages, *savedCount);
+            printf("Message composed successfully!\n");
+        }
+        system("pause");
+    }
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 void addUserConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, int targetIndex) { // 8.4
     // Check if the user is trying to add themselves
     if (userIndex == targetIndex) {
@@ -660,7 +1039,19 @@ void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *use
 
 void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) {
     int nChoice, bQuit = 0, bLogout = 0;
+    int sentCount = 0;
+    int announcementCount = 0;
+    int receiveCount = 0;
+    int numMessages = 0;
+    char sender[MAX_CHAR_USER];
+	messageTag messages[MAX_MESSAGES];
+    messageTag sentMessages[MAX_MESSAGES];
+    messageTag Announcements[MAX_MESSAGES];
+    messageTag Received[MAX_MESSAGES];
+    
 
+	strcpy(sender, username); // Copy the username to sender
+	loadAllMessagesFiles(messages ,&numMessages);
     do {
         system("cls");
         printf("Welcome to the User Module, %s!\n\n", username);
@@ -680,16 +1071,16 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, i
 
         switch (nChoice) {
             case 1:
-                //composeMessagePage(username);
+                composeMessage(sender, messages, &numMessages, newUser, numUsers);
                 break;
             case 2:
-                //viewInbox(username);
+                viewReceivedMessages(sender, messages, numMessages, Received, &receiveCount, newUser, numUsers);
                 break;
             case 3:
-                //viewSentMessages(username);
+                viewSentMessages(sender, messages, numMessages, sentMessages, &sentCount);
                 break;
             case 4:
-                //viewAnnouncements();
+                viewAnnouncements(messages, numMessages, Announcements, &announcementCount);
                 break;
             case 5:
                 modifyPersonalContents(newUser, numUsers, username, userIndex);
