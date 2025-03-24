@@ -1038,7 +1038,7 @@ void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *use
 }
 
 void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) {
-    int nChoice, bQuit = 0, bLogout = 0;
+    int nChoice, bQuit = 0;
     int sentCount = 0;
     int announcementCount = 0;
     int receiveCount = 0;
@@ -1067,7 +1067,7 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, i
         printf("[10] - Previous Page\n");
         printf("\n");
 
-        nChoice = getValidChoice(1, 10);
+        nChoice = getValidChoice(1, 9);
 
         switch (nChoice) {
             case 1:
@@ -1096,16 +1096,12 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, i
                 break;
             case 9:
                 printf("\nLogging out...\n");
-                bLogout = 1;
                 bQuit = 1;  // Exit the module when logging out
-                break;
-            case 10:
-                bQuit = 1;  // Go back to the previous page
+                system("pause");
                 break;
         }
     } while (!bQuit);
 }
-
 
 /********************************
 USER CREATION AND LOGIN FUNCTIONS
@@ -1410,7 +1406,6 @@ void LoginPage(UserInfo newUser[MAX_USERS], int *numUsers) { //Login Page UI
         }
     } while (!bQuit);
 }
-
 
 /**************
 ADMIN FUNCTIONS
