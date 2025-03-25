@@ -82,15 +82,15 @@ void saveMessagesToFile(messageTag SavedMessages[MAX_MESSAGES], int savedCount);
 void composeMessage(char user[], messageTag SavedMessages[MAX_MESSAGES], int *savedCount, UserInfo LoadedUsers[MAX_USERS], int numUsers); // 1
 /*------------------------------------------------------------------------------------------*/
 void addUserConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, int targetIndex); // 8.4
-void viewUserPage(UserInfo newUser[MAX_USERS], int numUsers, int targetIndex, int userIndex); // 8.3
-void filterUsersByName(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 8.2
-void viewAllUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 8.1
-void browseUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 8
+void viewUserPage(UserInfo newUser[MAX_USERS], int numUsers, int targetIndex, int userIndex, char user[], messageTag SavedMessages[MAX_MESSAGES], int *savedCount) ; // 8.3
+void filterUsersByName(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, char *username, messageTag SavedMessages[MAX_MESSAGES], int *savedCount); // 8.2
+void viewAllUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, char *username, messageTag SavedMessages[MAX_MESSAGES], int *savedCount); // 8.1
+void browseUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, char *username, messageTag SavedMessages[MAX_MESSAGES], int *savedCount); // 8
 void viewUserConnections(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 7.4
 void removePersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 7.3
 void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex); // 7.2
 void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 7.1
-void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex); //  7
+void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) ; //  7
 void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex); // 6
 void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex); //5
 void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex);
@@ -474,7 +474,7 @@ void composeMessage(char user[], messageTag SavedMessages[MAX_MESSAGES], int *sa
 }
 
 /*---------------------------------------------------------------------------------------------------------------------------------*/
-/*--------------------------------------------------------------------------------------------------------------------------------*/
+
 void addUserConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, int targetIndex) { // 8.4
     // Check if the user is trying to add themselves
     if (userIndex == targetIndex) {
@@ -488,7 +488,7 @@ void addUserConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex,
     system("pause");
 }
 
-void viewUserPage(UserInfo newUser[MAX_USERS], int numUsers, int targetIndex, int userIndex) { // 8.3
+void viewUserPage(UserInfo newUser[MAX_USERS], int numUsers, int targetIndex, int userIndex, char *username, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) { // 8.3
 	int bGoBack = 0;
 	do {
 		system("cls");
@@ -513,14 +513,14 @@ void viewUserPage(UserInfo newUser[MAX_USERS], int numUsers, int targetIndex, in
 	        addUserConnection(newUser, numUsers, userIndex, targetIndex);
 	    } 
 	    else if (choice == 2) {
-	        //sendPrivateMessage(newUser, numUsers, targetIndex);
+	        composeMessage(username, SavedMessages, savedCount, newUser, numUsers);
 	    }
 		else if (choice ==3)
 			bGoBack = 1;
 	} while (!bGoBack);
 }
 
-void filterUsersByName(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 8.2
+void filterUsersByName(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, char *username, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) { // 8.2
     char searchName[51];
     int i, found = 0;
 	int nChoice, targetIndex;
@@ -553,11 +553,11 @@ void filterUsersByName(UserInfo newUser[MAX_USERS], int numUsers, int userIndex)
     nChoice = getValidChoice(0, numUsers);
     targetIndex = nChoice - 1;
     if (nChoice != 0) {
-        viewUserPage(newUser, numUsers, targetIndex, userIndex);  
+        viewUserPage(newUser, numUsers, targetIndex, userIndex, username, SavedMessages, savedCount);  
     }
 }
 
-void viewAllUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 8.1
+void viewAllUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, char *username, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) { // 8.1
     int i, j, nChoice;
     int targetIndex;
     system("cls");
@@ -596,11 +596,11 @@ void viewAllUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { //
     targetIndex = nChoice - 1;
     
     if (nChoice != 0) {
-        viewUserPage(newUser, numUsers, targetIndex, userIndex);  
+        viewUserPage(newUser, numUsers, targetIndex, userIndex, username, SavedMessages, savedCount);
     }
 }
 
-void browseUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 8
+void browseUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, char *username, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) { // 8
     int nChoice;
     
     do {
@@ -613,10 +613,10 @@ void browseUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 
         nChoice = getValidChoice(1, 3);
 
         if (nChoice == 1) {
-            viewAllUsers(newUser, numUsers, userIndex);
+            viewAllUsers(newUser, numUsers, userIndex, username, SavedMessages, savedCount);
         } 
         else if (nChoice == 2) {
-            filterUsersByName(newUser, numUsers, userIndex);
+            filterUsersByName(newUser, numUsers, userIndex, username, SavedMessages, savedCount);
         }
     } while (nChoice != 3);
 }
@@ -790,7 +790,7 @@ void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIn
     system("pause");
 }
 
-void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) { // 7
+void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) { // 7
     int done = 0, nChoice;
 
     // Check if the user was found
@@ -1064,7 +1064,6 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, i
         printf("[7] - Modify Personal Connections\n");
         printf("[8] - Browse Users\n");
         printf("[9] - Logout\n");
-        printf("[10] - Previous Page\n");
         printf("\n");
 
         nChoice = getValidChoice(1, 9);
@@ -1089,10 +1088,10 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, i
                 modifyAccountSecurity(newUser, numUsers, username, userIndex);
                 break;
             case 7:
-                modifyPersonalConnectionsPage(newUser, numUsers, username, userIndex);
+                modifyPersonalConnectionsPage(newUser, numUsers, username, userIndex, messages, &numMessages);
                 break;
             case 8:
-                browseUsers(newUser, numUsers, userIndex);
+                browseUsers(newUser, numUsers, userIndex, username, messages, &numMessages);
                 break;
             case 9:
                 printf("\nLogging out...\n");
