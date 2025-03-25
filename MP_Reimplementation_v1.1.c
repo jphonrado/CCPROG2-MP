@@ -1679,59 +1679,46 @@ void cipherPassword(char *password, char *cipheredPassword) {
     }
     cipheredPassword[strlen(password)] = '\0';
 }
-
 void AdminViewAllUsers(UserInfo newUser[MAX_USERS], int numUsers) {
-    int i, j, nChoice;
-    int bQuit = 0;
-    int targetIndex;
+    int i, j;
     char cipheredPassword[MAX_CHAR_PASS];
     system("cls");
     printf("Users Registered in The Application:\n\n");
 
-    while (!bQuit) {
-        for (i = 0; i < numUsers; i++) {
-            cipherPassword(newUser[i].password, cipheredPassword);
+    for (i = 0; i < numUsers; i++) {
+        cipherPassword(newUser[i].password, cipheredPassword);
 
-            printf("[%d] Username: %s\n", i + 1, newUser[i].username);
-            printf("    Name: %s\n", newUser[i].name);
-            printf("    Password: %s\n", cipheredPassword);
+        printf("[%d] Username: %s\n", i + 1, newUser[i].username);
+        printf("    Name: %s\n", newUser[i].name);
+        printf("    Password: %s\n", cipheredPassword);
 
-            if (strlen(newUser[i].description) == 0) {
-                printf("    Description: DEFAULT USER\n");
-            } else {
-                printf("    Description: %s\n", newUser[i].description);
-            }
-
-            if (newUser[i].isAccountLocked) {
-                printf("    Account Status: Locked\n");
-            } else {
-                printf("    Account Status: Unlocked\n");
-            }
-
-            // Show connections
-            if (newUser[i].numConnections > 0) {
-                printf("    Connections: ");
-                for (j = 0; j < newUser[i].numConnections; j++) {
-                    printf("%s", newUser[i].connections[j]);
-                    if (j < newUser[i].numConnections - 1) {
-                        printf(", ");
-                    }
-                }
-                printf("\n\n");
-            } else {
-                printf("    Connections: NONE\n\n");
-            }
+        if (strlen(newUser[i].description) == 0) {
+            printf("    Description: DEFAULT USER\n");
+        } else {
+            printf("    Description: %s\n", newUser[i].description);
         }
 
-        printf("Enter the number of the user you want to edit or press 0 to go back\n");
-        nChoice = getValidChoice(0, numUsers);
-        if (nChoice == 0) {
-            bQuit = 1;
+        if (newUser[i].isAccountLocked) {
+            printf("    Account Status: Locked\n");
         } else {
-            targetIndex = nChoice - 1;
-            editUserDetails(newUser, numUsers, targetIndex);
+            printf("    Account Status: Unlocked\n");
+        }
+
+        // Show connections
+        if (newUser[i].numConnections > 0) {
+            printf("    Connections: ");
+            for (j = 0; j < newUser[i].numConnections; j++) {
+                printf("%s", newUser[i].connections[j]);
+                if (j < newUser[i].numConnections - 1) {
+                    printf(", ");
+                }
+            }
+            printf("\n\n");
+        } else {
+            printf("    Connections: NONE\n\n");
         }
     }
+    system("pause");
 }
 
 void editUserDetails(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) {
@@ -1789,6 +1776,72 @@ void editUserDetails(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) {
         saveToUsersFile(newUser, numUsers);
     }
 }
+void deleteUser(UserInfo newUser[MAX_USERS], int *numUsers, int userIndex) {
+    int i, j;
+
+    // Remove the user from all other users' connections
+    for (i = 0; i < *numUsers; i++) {
+        if (i != userIndex) {
+            for (j = 0; j < newUser[i].numConnections; j++) {
+                if (strcmp(newUser[i].connections[j], newUser[userIndex].username) == 0) {
+                    // Shift connections to remove the deleted user
+                    for (int k = j; k < newUser[i].numConnections - 1; k++) {
+                        strcpy(newUser[i].connections[k], newUser[i].connections[k + 1]);
+                    }
+                    newUser[i].numConnections--;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Shift users to remove the deleted user
+    for (i = userIndex; i < *numUsers - 1; i++) {
+        newUser[i] = newUser[i + 1];
+    }
+    (*numUsers)--;
+
+    // Save changes to file
+    saveToUsersFile(newUser, *numUsers);
+    printf("User deleted successfully!\n");
+    system("pause");
+}
+
+void AdminModifyUsers(UserInfo newUser[MAX_USERS], int numUsers) {
+    int nChoice, bQuit = 0;
+    int targetIndex;
+
+    while (!bQuit) {
+        AdminViewAllUsers(newUser, numUsers);
+        printf("Enter the number of the user you want to edit or press 0 to go back\n");
+        nChoice = getValidChoice(0, numUsers);
+        if (nChoice == 0) {
+            bQuit = 1;
+        } else {
+            targetIndex = nChoice - 1;
+            editUserDetails(newUser, numUsers, targetIndex);
+        }
+    }
+}
+
+void AdminDeleteUsers(UserInfo newUser[MAX_USERS], int *numUsers) {
+    int nChoice, bQuit = 0;
+    int userIndex;
+
+    while (!bQuit) {
+        AdminViewAllUsers(newUser, *numUsers);
+        printf("Enter the number of the user you want to delete or press 0 to go back\n");
+        nChoice = getValidChoice(0, *numUsers);
+        if (nChoice == 0) {
+            bQuit = 1;
+        } else {
+            userIndex = nChoice - 1;
+            deleteUser(newUser, numUsers, userIndex);
+        }
+    }
+}
+
+
 void AdminHandleUsersModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     int nChoice, bQuit = 0;
     while (!bQuit) {
@@ -1806,16 +1859,16 @@ void AdminHandleUsersModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[
 
         switch (nChoice) {
             case 1:
-               	AdminViewAllUsers(newUser, numUsers);
+                AdminViewAllUsers(newUser, numUsers);
                 break;
             case 2:
-                // modifyUsers();
+                AdminModifyUsers(newUser, numUsers);
                 break;
             case 3:
                 refreshUserAccountPasswordPage(newUser, numUsers, resetRequests, numResetRequests);
                 break;
             case 4:
-                // deleteUsers();
+                AdminDeleteUsers(newUser, &numUsers);
                 break;
             case 5:
                 bQuit = 1;
