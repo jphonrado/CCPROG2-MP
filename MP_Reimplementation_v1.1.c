@@ -24,7 +24,8 @@
 typedef char String[101];
 
 typedef struct {
-	int numConnections;
+    int isAccountLocked; // 0 for unlocked, 1 for locked
+    int numConnections;
     char name[MAX_CHAR_USER];
     char username[MAX_CHAR_USER];
     char password[MAX_CHAR_PASS];
@@ -48,12 +49,13 @@ void clean(String strTemp);
 int getValidChoice(int lower, int upper);
 
 /****************************USER CREATION AND LOG IN FUNCTIONS*****************************/
+void forgotPassword(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
 void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers);
 void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers);
 int isUserValid(String username, String password, UserInfo newUser[MAX_USERS], int numUsers);
 int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], int numUsers);
 void Login(UserInfo newUser[MAX_USERS], int *numUsers);
-void LoginPage(UserInfo newUser[MAX_USERS], int *numUsers);
+void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
 int isUsernameTaken(UserInfo newUser[MAX_USERS], int numUsers, char *username);
 void createNewAccount(UserInfo newUser[MAX_USERS], int *numUsers);
 /********************************************************************************************/
@@ -63,8 +65,10 @@ void saveToAdminPassFile(char adminPass[MAX_CHAR_PASS]);
 void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]);
 void createNewAdminPass(char adminPass[MAX_CHAR_PASS]);
 void changeAdminPass(char adminPass[MAX_CHAR_PASS]);
-void AdminModuleLogin(char adminPass[MAX_CHAR_PASS]);
-void AdminModulePage(char adminPass[MAX_CHAR_PASS]);
+void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
+void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
+void forgotPassword(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
+void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
 /********************************************************************************************/
 
 /***********************************USER MODULE FUNCTIONS************************************/
@@ -1105,6 +1109,53 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, i
 /********************************
 USER CREATION AND LOGIN FUNCTIONS
 *********************************/
+int getUserIndexNoPassword(String username,UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not, returns the index of the found username
+    for (int i = 0; i < numUsers; i++) {
+        if (strcmp(newUser[i].username, username) == 0) {
+            return i; //Returns the found user index
+        }
+    }
+    return -1; // User index not found
+}
+void forgotPassword(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
+    char nameInput[MAX_CHAR_USER];
+    char securityAnswer[MAX_CHAR_SEC];
+    int userIndex;
+    int bGoBack = 0;
+
+    system("cls");
+    printf("Forgot Password (Enter 'back' to return to the previous page)\n\n");
+
+    while (!bGoBack) {
+        printf("Enter your username: ");
+        fgets(nameInput, sizeof(nameInput), stdin);
+        clean(nameInput);
+        bGoBack = strcmp(nameInput, "back") == 0;
+
+        if (!bGoBack) {
+            userIndex = getUserIndexNoPassword(nameInput, newUser, numUsers);
+            if (userIndex != -1) {
+                printf("Security Question: %s\n", newUser[userIndex].securityQuestion);
+                printf("Enter your answer: ");
+                fgets(securityAnswer, sizeof(securityAnswer), stdin);
+                clean(securityAnswer);
+
+                if (strcmp(securityAnswer, newUser[userIndex].securityAnswer) == 0) {
+                    // Add request to reset password
+                    strcpy(resetRequests[*numResetRequests], nameInput);
+                    (*numResetRequests)++;
+                    printf("Password reset request has been sent to the administrator.\n");
+                    bGoBack = 1;
+                } else {
+                    printf("Incorrect answer. Please try again.\n");
+                }
+            } else {
+                printf("Username not found. Please try again.\n");
+            }
+        }
+    }
+    system("pause");
+}
 
 int isUsernameTaken(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
     int i;
@@ -1198,7 +1249,7 @@ void createNewAccount(UserInfo newUser[MAX_USERS], int *numUsers) {
     }
 }
 
-void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers) { // Saves user information into file
+void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers) {
     FILE *pFile = fopen(USERSFILE, "wt"); // Open in write mode
     int i, j;
 
@@ -1210,7 +1261,8 @@ void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers) { // Saves user 
         for (i = 0; i < numUsers; i++) {
             // Write basic user information
             if (strlen(newUser[i].description) == 0) {
-                fprintf(pFile, "%s-%s-%s-%s-%s-DEFAULT USER-", 
+                fprintf(pFile, "%d-%s-%s-%s-%s-%s-DEFAULT USER-", 
+                    newUser[i].isAccountLocked,
                     newUser[i].name,
                     newUser[i].username,
                     newUser[i].password,
@@ -1218,7 +1270,8 @@ void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers) { // Saves user 
                     newUser[i].securityAnswer);
             } 
             else {
-                fprintf(pFile, "%s-%s-%s-%s-%s-%s-", 
+                fprintf(pFile, "%d-%s-%s-%s-%s-%s-%s-", 
+                    newUser[i].isAccountLocked,
                     newUser[i].name,
                     newUser[i].username,
                     newUser[i].password,
@@ -1271,7 +1324,8 @@ void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers) {
     FILE *pFile = fopen(USERSFILE, "rt"); // Open in read mode
     String strTemp;
     int i = 0;
-	char tempConnections[10]; // Temp storage for connections
+    char tempConnections[10]; // Temp storage for connections
+
     if (pFile != NULL) {
         // Read the number of users
         fgets(strTemp, sizeof(strTemp), pFile);
@@ -1284,15 +1338,15 @@ void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers) {
 
         // Loop through all users and parse their information
         while (fgets(strTemp, sizeof(strTemp), pFile) != NULL && i < *numUsers) {
-
-            if (sscanf(strTemp, "%[^-]-%[^-]-%[^-]-%[^-]-%[^-]-%[^-]-%[^\n]",
+            if (sscanf(strTemp, "%d-%[^-]-%[^-]-%[^-]-%[^-]-%[^-]-%[^-]-%[^\n]",
+                       &newUser[i].isAccountLocked,
                        newUser[i].name,
                        newUser[i].username,
                        newUser[i].password,
                        newUser[i].securityQuestion,
                        newUser[i].securityAnswer,
                        newUser[i].description,
-                       tempConnections) == 7) {
+                       tempConnections) == 8) {
                 
                 // Parse connections properly
                 parseConnections(newUser[i].connections, tempConnections, &newUser[i].numConnections);
@@ -1318,7 +1372,7 @@ int isUserValid(String username, String password, UserInfo newUser[MAX_USERS], i
     return 0; // Invalid user
 }
 
-int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not 
+int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not, returns the index of the found username
     for (int i = 0; i < numUsers; i++) {
         if (strcmp(newUser[i].username, username) == 0 && strcmp(newUser[i].password, password) == 0) {
             return i; //Returns the found user index
@@ -1342,20 +1396,28 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers) {
         fgets(nameInput, sizeof(nameInput), stdin);
         clean(nameInput);
         bGoBack = strcmp(nameInput, "back") == 0;
-		
-		
+        
         if (!bGoBack) {
             printf("Enter Password: ");
             fgets(passInput, sizeof(passInput), stdin);
             clean(passInput);
 
-            if (isUserValid(nameInput, passInput, newUser, *numUsers)) {
-                printf("Login successful!\n");
-                system("pause");
-                userIndex = getUserIndex(nameInput, passInput, newUser, *numUsers);
-				userModulePage(newUser, *numUsers, nameInput, userIndex);
-            } 
-            else {
+            userIndex = getUserIndex(nameInput, passInput, newUser, *numUsers);
+            if (userIndex != -1) {
+                if (newUser[userIndex].isAccountLocked) {
+                    printf("Your account is locked. Please contact the administrator to unlock your account.\n");
+                    system("pause");
+                    bGoBack = 1;
+                } else if (isUserValid(nameInput, passInput, newUser, *numUsers)) {
+                    printf("Login successful!\n");
+                    system("pause");
+                    userModulePage(newUser, *numUsers, nameInput, userIndex);
+                } else {
+                    attempts--;
+                    printf("Incorrect username or password. Attempts left: %d\n\n", attempts);
+                    system("pause");
+                }
+            } else {
                 attempts--;
                 printf("Incorrect username or password. Attempts left: %d\n\n", attempts);
                 system("pause");
@@ -1371,8 +1433,7 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers) {
     system("pause");
 }
 
-void LoginPage(UserInfo newUser[MAX_USERS], int *numUsers) { //Login Page UI
-
+void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     int nChoice, bQuit = 0;
 
     do {
@@ -1394,10 +1455,10 @@ void LoginPage(UserInfo newUser[MAX_USERS], int *numUsers) { //Login Page UI
                 createNewAccount(newUser, numUsers);
                 break;
             case 3:
-                //AdminModuleLogin(adminPass);
+                AdminModuleLogin(adminPass, newUser, *numUsers, resetRequests, numResetRequests);
                 break;
             case 4:
-                // Forgot Password
+                forgotPassword(newUser, *numUsers, resetRequests, numResetRequests);
                 break;
             case 5:
                 bQuit = 1;
@@ -1510,20 +1571,19 @@ void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //loads information 
     int isEmpty = 1;
 
     // Open file in read mode
-    pFile = fopen("adminPass.txt", "rt");
+    pFile = fopen(ADMINPASSFILE, "rt");
 
     if (pFile != NULL) {
     	fgets(adminPass, MAX_CHAR_PASS, pFile);
         clean(adminPass); // Clean newline if any
         fclose(pFile);
-        
     }
     else {
     	createNewAdminPass(adminPass);
 	}
 }
 
-void AdminModuleLogin(char adminPass[MAX_CHAR_PASS]) {
+void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     String enteredPass;
     int attempts = 3;
     int bGoBack = 0;
@@ -1541,7 +1601,7 @@ void AdminModuleLogin(char adminPass[MAX_CHAR_PASS]) {
             bGoBack = 1;
         } else if (strcmp(enteredPass, adminPass) == 0) {
             printf("Admin login successful!\n");
-            AdminModulePage(adminPass);
+            AdminModulePage(adminPass, newUser, numUsers, resetRequests, numResetRequests);
 			system("pause");
         } else {
             attempts--;
@@ -1551,7 +1611,95 @@ void AdminModuleLogin(char adminPass[MAX_CHAR_PASS]) {
     }
 }
 
-void AdminModulePage(char adminPass[MAX_CHAR_PASS]) {
+void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
+    int i, userIndex;
+    char defaultPassword[MAX_CHAR_PASS] = "default";
+    int nChoice, bQuit = 0;
+
+    while (!bQuit) {
+        system("cls");
+        printf("Refresh User Account Password\n\n");
+
+        if (*numResetRequests == 0) {
+            printf("No password reset requests.\n");
+            bQuit = 1;
+        } else {
+            printf("Users who have requested a password reset:\n\n");
+            for (i = 0; i < *numResetRequests; i++) {
+                userIndex = getUserIndexNoPassword(resetRequests[i], newUser, numUsers);
+                if (userIndex != -1) {
+                    printf("[%d] Username: %s\n", i + 1, newUser[userIndex].username);
+                    printf("    Name: %s\n", newUser[userIndex].name);
+                    printf("    Description: %s\n\n", strlen(newUser[userIndex].description) == 0 ? "DEFAULT USER" : newUser[userIndex].description);
+                } else {
+                    printf("[%d] Username: %s (User not found)\n\n", i + 1, resetRequests[i]);
+                }
+            }
+
+            printf("[0] - Go back\n\n");
+            nChoice = getValidChoice(0, *numResetRequests);
+
+            if (nChoice != 0) {
+                userIndex = getUserIndexNoPassword(resetRequests[nChoice - 1], newUser, numUsers);
+                if (userIndex != -1) {
+                    // Reset the user's password to the default password
+                    strcpy(newUser[userIndex].password, defaultPassword);
+                    newUser[userIndex].isAccountLocked = 1; // Lock the account until the user changes the password
+                    printf("Password for user '%s' has been reset to '%s'.\n", resetRequests[nChoice - 1], defaultPassword);
+
+                    // Remove the request from the list
+                    for (i = nChoice - 1; i < *numResetRequests - 1; i++) {
+                        strcpy(resetRequests[i], resetRequests[i + 1]);
+                    }
+                    (*numResetRequests)--;
+
+                    saveToUsersFile(newUser, numUsers);
+                } else {
+                    printf("User '%s' not found.\n", resetRequests[nChoice - 1]);
+                }
+                system("pause");
+            } else {
+                bQuit = 1;
+            }
+        }
+    }
+}
+void AdminHandleUsersModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
+    int nChoice, bQuit = 0;
+    while (!bQuit) {
+        system("cls");
+        printf("ADMIN MODULE - Users Module\n");
+        printf("\n");
+        printf("Please choose an option:\n\n");
+        printf("[1] - View Users\n");
+        printf("[2] - Modify Users\n");
+        printf("[3] - Refresh User Account Password\n");
+        printf("[4] - Delete Users\n");
+        printf("[5] - Quit\n\n");
+
+        nChoice = getValidChoice(1, 5);
+
+        switch (nChoice) {
+            case 1:
+                // viewUsers();
+                break;
+            case 2:
+                // modifyUsers();
+                break;
+            case 3:
+                refreshUserAccountPasswordPage(newUser, numUsers, resetRequests, numResetRequests);
+                break;
+            case 4:
+                // deleteUsers();
+                break;
+            case 5:
+                bQuit = 1;
+                break;
+        }
+    }
+}
+
+void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     int nChoice;
     int bQuit = 0;
 
@@ -1569,10 +1717,10 @@ void AdminModulePage(char adminPass[MAX_CHAR_PASS]) {
 
         switch (nChoice) {
             case 1:
-//                adminHandleUsersModule();
+                AdminHandleUsersModulePage(adminPass, newUser, numUsers, resetRequests, numResetRequests);
                 break;
             case 2:
-//                adminHandleMessagesModule();
+                // adminHandleMessagesModule();
                 break;
             case 3:
                 changeAdminPass(adminPass);
@@ -1585,38 +1733,39 @@ void AdminModulePage(char adminPass[MAX_CHAR_PASS]) {
 }
 
 int main() {
-	int nChoice, bQuit = 0; //Flags
-	int numUsers; // No. of users
-	char adminPass[MAX_CHAR_PASS];	
-	UserInfo newUser[MAX_USERS];
-	
-	numUsers = 0; 
-	loadFromUsersFile(newUser, &numUsers);
+    int nChoice, bQuit = 0; // Flags
+    int numUsers; // No. of users
+    char adminPass[MAX_CHAR_PASS];
+    UserInfo newUser[MAX_USERS];
+    String resetRequests[MAX_USERS];
+    int numResetRequests = 0;
 
-	do {
-		system("cls");
+    numUsers = 0;
+    loadFromUsersFile(newUser, &numUsers);
+
+    do {
+        system("cls");
         printf("Welcome to the Gummiphone!\n\n");
         printf("[1] - Login\n");
         printf("[2] - Administrator Module\n");
-        printf("[3] - Quit\n\n"); 
+        printf("[3] - Quit\n\n");
 
         nChoice = getValidChoice(1, 3);
 
         if (nChoice == 1) {
-        	LoginPage(newUser, &numUsers);
-		}
-        else if (nChoice == 2) {
-            AdminModuleLogin(adminPass);
-		}
-        else if (nChoice == 3) {
-        	bQuit = 1;
-		}
-			
-	} while (!bQuit);
-	
-	return 0;
-}
+            LoginPage(adminPass, newUser, &numUsers, resetRequests, &numResetRequests);
+        } 
+		else if (nChoice == 2) {
+            AdminModuleLogin(adminPass, newUser, numUsers, resetRequests, &numResetRequests);
+        } 
+		else if (nChoice == 3) {
+            bQuit = 1;
+        }
 
+    } while (!bQuit);
+
+    return 0;
+}
 
 
 
