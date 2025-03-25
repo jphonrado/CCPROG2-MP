@@ -69,6 +69,7 @@ void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS]
 void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
 void forgotPassword(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
 void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
+void editUserDetails(UserInfo newUser[MAX_USERS], int numUsers, int userIndex);
 /********************************************************************************************/
 
 /***********************************USER MODULE FUNCTIONS************************************/
@@ -1722,11 +1723,70 @@ void AdminViewAllUsers(UserInfo newUser[MAX_USERS], int numUsers) {
             }
         }
 
-        printf("Press 0 to go back\n");
-        nChoice = getValidChoice(0, 0);
+        printf("Enter the number of the user you want to edit or press 0 to go back\n");
+        nChoice = getValidChoice(0, numUsers);
         if (nChoice == 0) {
             bQuit = 1;
+        } else {
+            targetIndex = nChoice - 1;
+            editUserDetails(newUser, numUsers, targetIndex);
         }
+    }
+}
+
+void editUserDetails(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) {
+    int nChoice, done = 0;
+    char temp[MAX_CHAR_USER];
+
+    while (!done) {
+        system("cls");
+        printf("Editing User: %s\n\n", newUser[userIndex].username);
+        printf("[1] - Edit Name\n");
+        printf("[2] - Edit Username\n");
+        printf("[3] - Edit Description\n");
+        printf("[4] - Add Personal Connection\n");
+        printf("[5] - Remove Personal Connection\n");
+        printf("[6] - Go back\n\n");
+
+        nChoice = getValidChoice(1, 6);
+
+        switch (nChoice) {
+            case 1:
+                printf("Enter new name: ");
+                fgets(temp, sizeof(temp), stdin);
+                clean(temp);
+                strcpy(newUser[userIndex].name, temp);
+                printf("Name changed successfully!\n");
+                system("pause");
+                break;
+            case 2:
+                printf("Enter new username: ");
+                fgets(temp, sizeof(temp), stdin);
+                clean(temp);
+                strcpy(newUser[userIndex].username, temp);
+                printf("Username changed successfully!\n");
+                system("pause");
+                break;
+            case 3:
+                printf("Enter new description: ");
+                fgets(temp, sizeof(temp), stdin);
+                clean(temp);
+                strcpy(newUser[userIndex].description, temp);
+                printf("Description changed successfully\n");
+                system("pause");
+                break;
+            case 4:
+                addPersonalConnection(newUser, numUsers, userIndex);
+                break;
+            case 5:
+                removePersonalConnection(newUser, numUsers, userIndex);
+                break;
+            case 6:
+                done = 1;
+                break;
+        }
+
+        saveToUsersFile(newUser, numUsers);
     }
 }
 void AdminHandleUsersModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
