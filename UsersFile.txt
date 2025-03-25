@@ -1,3 +1,2 @@
-2
-1-Jose Paulo Honrado-Jp123-default-Fav color-Blue-DEFAULT USER-NONE
-0-Paulo Honrado-Pau-123-Fav color-red-DEFAULT USER-NONE
+1
+0-Jose Paulo Honrado-Jp123-123-Fav color-Blue-DEFAULT USER-NONE

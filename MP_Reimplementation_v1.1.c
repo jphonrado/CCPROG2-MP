@@ -1381,10 +1381,10 @@ int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], 
     return -1; // User index not found
 }
 
-void Login(UserInfo newUser[MAX_USERS], int *numUsers) {
+void Login(UserInfo newUser[MAX_USERS], int *numUsers) { //TO FIX: LOCKING USER AFTER MANY ATTEMPTS
     String nameInput;
     String passInput;
-    int userIndex;
+    int userIndex = -1;  // Initialize to -1 to indicate no valid user yet
     int attempts = 3;
     int bGoBack = 0;
 
@@ -1403,21 +1403,20 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers) {
             clean(passInput);
 
             userIndex = getUserIndex(nameInput, passInput, newUser, *numUsers);
-            if (userIndex != -1) {
-                if (newUser[userIndex].isAccountLocked) {
-                    printf("Your account is locked. Please contact the administrator to unlock your account.\n");
-                    system("pause");
-                    bGoBack = 1;
-                } else if (isUserValid(nameInput, passInput, newUser, *numUsers)) {
-                    printf("Login successful!\n");
-                    system("pause");
-                    userModulePage(newUser, *numUsers, nameInput, userIndex);
-                } else {
-                    attempts--;
-                    printf("Incorrect username or password. Attempts left: %d\n\n", attempts);
-                    system("pause");
-                }
-            } else {
+            
+            // Check if the account is locked
+            if (userIndex != -1 && newUser[userIndex].isAccountLocked) {
+                printf("Your account is locked. Please contact the administrator to unlock your account.\n");
+                system("pause");
+                bGoBack = 1;
+            } 
+            else if (userIndex != -1 && isUserValid(nameInput, passInput, newUser, *numUsers)) {
+                printf("Login successful!\n");
+                system("pause");
+                userModulePage(newUser, *numUsers, nameInput, userIndex);
+                return;  // Successful login, exit the function
+            } 
+            else {
                 attempts--;
                 printf("Incorrect username or password. Attempts left: %d\n\n", attempts);
                 system("pause");
@@ -1427,11 +1426,18 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers) {
 
     if (bGoBack) {
         printf("Returning to the previous page...\n");
-    } else if (attempts == 0) {
-        printf("Too many failed attempts. You are now locked out.\n");
+    } 
+    else if (attempts == 0 && userIndex != -1) {
+        printf("Too many failed attempts. Your account is now locked.\n");
+        
+        // Lock the account and save changes
+        newUser[userIndex].isAccountLocked = 1;
+        saveToUsersFile(newUser, *numUsers);  
     }
+
     system("pause");
 }
+
 
 void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     int nChoice, bQuit = 0;
@@ -1664,6 +1670,65 @@ void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, S
         }
     }
 }
+
+void cipherPassword(char *password, char *cipheredPassword) {
+    int shift = 3; // Caesar cipher shift
+    for (int i = 0; password[i] != '\0'; i++) {
+        cipheredPassword[i] = password[i] + shift;
+    }
+    cipheredPassword[strlen(password)] = '\0';
+}
+
+void AdminViewAllUsers(UserInfo newUser[MAX_USERS], int numUsers) {
+    int i, j, nChoice;
+    int bQuit = 0;
+    int targetIndex;
+    char cipheredPassword[MAX_CHAR_PASS];
+    system("cls");
+    printf("Users Registered in The Application:\n\n");
+
+    while (!bQuit) {
+        for (i = 0; i < numUsers; i++) {
+            cipherPassword(newUser[i].password, cipheredPassword);
+
+            printf("[%d] Username: %s\n", i + 1, newUser[i].username);
+            printf("    Name: %s\n", newUser[i].name);
+            printf("    Password: %s\n", cipheredPassword);
+
+            if (strlen(newUser[i].description) == 0) {
+                printf("    Description: DEFAULT USER\n");
+            } else {
+                printf("    Description: %s\n", newUser[i].description);
+            }
+
+            if (newUser[i].isAccountLocked) {
+                printf("    Account Status: Locked\n");
+            } else {
+                printf("    Account Status: Unlocked\n");
+            }
+
+            // Show connections
+            if (newUser[i].numConnections > 0) {
+                printf("    Connections: ");
+                for (j = 0; j < newUser[i].numConnections; j++) {
+                    printf("%s", newUser[i].connections[j]);
+                    if (j < newUser[i].numConnections - 1) {
+                        printf(", ");
+                    }
+                }
+                printf("\n\n");
+            } else {
+                printf("    Connections: NONE\n\n");
+            }
+        }
+
+        printf("Press 0 to go back\n");
+        nChoice = getValidChoice(0, 0);
+        if (nChoice == 0) {
+            bQuit = 1;
+        }
+    }
+}
 void AdminHandleUsersModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     int nChoice, bQuit = 0;
     while (!bQuit) {
@@ -1681,7 +1746,7 @@ void AdminHandleUsersModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[
 
         switch (nChoice) {
             case 1:
-                // viewUsers();
+               	AdminViewAllUsers(newUser, numUsers);
                 break;
             case 2:
                 // modifyUsers();
