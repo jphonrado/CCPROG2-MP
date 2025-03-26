@@ -1415,21 +1415,21 @@ int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], 
 void Login(UserInfo newUser[MAX_USERS], int *numUsers,
     int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
     messageTag sentMessages[MAX_MESSAGES], messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
-String nameInput;
-String passInput;
-int userIndex = -1;  // Initialize to -1 to indicate no valid user yet
-int attempts = 3;
-int bGoBack = 0;
-int bLoginSuccess = 0;  // Flag to indicate successful login
+    String nameInput;
+    String passInput;
+    int userIndex = -1;  // Initialize to -1 to indicate no valid user yet
+    int attempts = 3;
+    int bGoBack = 0;
+    int bLoginSuccess = 0;  // Flag to indicate successful login
 
-while (attempts > 0 && !bGoBack && !bLoginSuccess) {
-    system("cls");
-    printf("Enter your username or enter \"back\" to return to the previous page\n\n");
+    while (attempts > 0 && !bGoBack && !bLoginSuccess) {
+        system("cls");
+        printf("Enter your username or enter \"back\" to return to the previous page\n\n");
 
-    printf("Enter Username: ");
-    fgets(nameInput, sizeof(nameInput), stdin);
-    clean(nameInput);
-    bGoBack = strcmp(nameInput, "back") == 0;
+        printf("Enter Username: ");
+        fgets(nameInput, sizeof(nameInput), stdin);
+        clean(nameInput);
+        bGoBack = strcmp(nameInput, "back") == 0;
 
         if (!bGoBack) {
             printf("Enter Password: ");
@@ -1469,8 +1469,8 @@ while (attempts > 0 && !bGoBack && !bLoginSuccess) {
     else if (bLoginSuccess) {
         printf("Login successful!\n");
         system("pause");
-    // Call user module after loop completion
-    userModulePage(newUser, *numUsers, nameInput, userIndex, sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
+        // Call user module after loop completion
+        userModulePage(newUser, *numUsers, nameInput, userIndex, sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
     }
     system("pause");  // Pause before returning to the main menu
 }
@@ -1866,10 +1866,51 @@ void AdminDeleteUsers(UserInfo newUser[MAX_USERS], int *numUsers) {
     }
 }
 
+void AdminUnlockUsers(UserInfo newUser[MAX_USERS], int numUsers) {
+    int i, nChoice, bQuit = 0;
+
+    while (!bQuit) {
+        system("cls");
+        printf("Unlock User Accounts\n\n");
+
+        int lockedUsers = 0;
+        for (i = 0; i < numUsers; i++) {
+            if (newUser[i].isAccountLocked) {
+                printf("[%d] Username: %s\n", i + 1, newUser[i].username);
+                printf("    Name: %s\n", newUser[i].name);
+                printf("    Description: %s\n\n", strlen(newUser[i].description) == 0 ? "DEFAULT USER" : newUser[i].description);
+                lockedUsers++;
+            }
+        }
+
+        if (lockedUsers == 0) {
+            printf("No locked accounts found.\n");
+            bQuit = 1;
+        } else {
+            printf("[0] - Go back\n\n");
+            printf("Enter the number of the user to unlock: ");
+            nChoice = getValidChoice(0, numUsers);
+
+            if (nChoice == 0) {
+                bQuit = 1;
+            } else {
+                int userIndex = nChoice - 1;
+                if (newUser[userIndex].isAccountLocked) {
+                    newUser[userIndex].isAccountLocked = 0;
+                    saveToUsersFile(newUser, numUsers);
+                    printf("User '%s' has been unlocked successfully!\n", newUser[userIndex].username);
+                } else {
+                    printf("User '%s' is not locked.\n", newUser[userIndex].username);
+                }
+                system("pause");
+            }
+        }
+    }
+}
+
 void AdminHandleUsersModulePage(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     int nChoice, bQuit = 0;
-    
-    
+
     while (!bQuit) {
         system("cls");
         printf("ADMIN MODULE - Users Module\n");
@@ -1879,9 +1920,10 @@ void AdminHandleUsersModulePage(UserInfo newUser[MAX_USERS], int numUsers, Strin
         printf("[2] - Modify Users\n");
         printf("[3] - Refresh User Account Password\n");
         printf("[4] - Delete Users\n");
-        printf("[5] - Quit\n\n");
+        printf("[5] - Unlock User Accounts\n");
+        printf("[6] - Quit\n\n");
 
-        nChoice = getValidChoice(1, 5);
+        nChoice = getValidChoice(1, 6);
 
         switch (nChoice) {
             case 1:
@@ -1897,6 +1939,9 @@ void AdminHandleUsersModulePage(UserInfo newUser[MAX_USERS], int numUsers, Strin
                 AdminDeleteUsers(newUser, &numUsers);
                 break;
             case 5:
+                AdminUnlockUsers(newUser, numUsers);
+                break;
+            case 6:
                 bQuit = 1;
                 break;
         }
@@ -2067,7 +2112,6 @@ void AdminViewAllMessages(messageTag SavedMessages[MAX_MESSAGES], int totalMessa
             for (j = 0; j < numUsers; j++) {
                 if (strcmp(SavedMessages[i].strSender, newUser[j].username) == 0) {
                     senderExists = 1;
-                    break;
                 }
             }
 
