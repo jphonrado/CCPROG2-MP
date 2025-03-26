@@ -1413,41 +1413,39 @@ int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], 
 }
 
 void Login(UserInfo newUser[MAX_USERS], int *numUsers,
-            int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
-            messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) { //TO FIX: LOCKING USER AFTER MANY ATTEMPTS
-    String nameInput;
-    String passInput;
-    int userIndex = -1;  // Initialize to -1 to indicate no valid user yet
-    int attempts = 3;
-    int bGoBack = 0;
+    int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+    messageTag sentMessages[MAX_MESSAGES], messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
+String nameInput;
+String passInput;
+int userIndex = -1;  // Initialize to -1 to indicate no valid user yet
+int attempts = 3;
+int bGoBack = 0;
+int bLoginSuccess = 0;  // Flag to indicate successful login
 
-    while (attempts > 0 && !bGoBack) {
-        system("cls");
-        printf("Enter your username or enter \"back\" to return to the previous page\n\n");
-        
-        printf("Enter Username: ");
-        fgets(nameInput, sizeof(nameInput), stdin);
-        clean(nameInput);
-        bGoBack = strcmp(nameInput, "back") == 0;
-        
+while (attempts > 0 && !bGoBack && !bLoginSuccess) {
+    system("cls");
+    printf("Enter your username or enter \"back\" to return to the previous page\n\n");
+
+    printf("Enter Username: ");
+    fgets(nameInput, sizeof(nameInput), stdin);
+    clean(nameInput);
+    bGoBack = strcmp(nameInput, "back") == 0;
+
         if (!bGoBack) {
             printf("Enter Password: ");
             fgets(passInput, sizeof(passInput), stdin);
             clean(passInput);
 
             userIndex = getUserIndex(nameInput, passInput, newUser, *numUsers);
-            
-            // Check if the account is locked
+
+            // Check if account is locked
             if (userIndex != -1 && newUser[userIndex].isAccountLocked) {
                 printf("Your account is locked. Please contact the administrator to unlock your account.\n");
                 system("pause");
-                bGoBack = 1;
+                bGoBack = 1;  // Force exit after showing the message
             } 
             else if (userIndex != -1 && isUserValid(nameInput, passInput, newUser, *numUsers)) {
-                printf("Login successful!\n");
-                system("pause");
-                userModulePage(newUser, *numUsers, nameInput, userIndex,sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
-                return;  // Successful login, exit the function
+                bLoginSuccess = 1;  // Mark login as successful
             } 
             else {
                 attempts--;
@@ -1462,14 +1460,23 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers,
     } 
     else if (attempts == 0 && userIndex != -1) {
         printf("Too many failed attempts. Your account is now locked.\n");
-        
+
         // Lock the account and save changes
         newUser[userIndex].isAccountLocked = 1;
-        saveToUsersFile(newUser, *numUsers);  
+        saveToUsersFile(newUser, *numUsers);
+        system("pause");
+    } 
+    else if (bLoginSuccess) {
+        printf("Login successful!\n");
+        system("pause");
+    // Call user module after loop completion
+    userModulePage(newUser, *numUsers, nameInput, userIndex, sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
     }
-
-    system("pause");
+    system("pause");  // Pause before returning to the main menu
 }
+
+
+
 
 
 void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, String resetRequests[MAX_USERS], int *numResetRequests, 
@@ -1896,8 +1903,157 @@ void AdminHandleUsersModulePage(UserInfo newUser[MAX_USERS], int numUsers, Strin
     }
 }
 
-void AdminViewAllMessages(messageTag SavedMessages[MAX_MESSAGES], int totalMessages) {
-    int i, j;
+void AdminDeleteMessage(messageTag SavedMessages[MAX_MESSAGES], int *totalMessages) {
+    int nChoice, i, j;
+    int bQuit = 0;
+
+    while (!bQuit) {
+        system("cls");
+        printf("ADMIN MODULE - Delete Message\n\n");
+
+        if (*totalMessages == 0) {
+            printf("No messages available to delete.\n");
+            bQuit = 1;
+        } 
+        else {
+            printf("Messages:\n\n");
+            for (i = 0; i < *totalMessages; i++) {
+                printf("[%d] From: %s\n", i + 1, SavedMessages[i].strSender);
+                printf("    To: ");
+                for (j = 0; j < SavedMessages[i].numReceivers; j++) {
+                    printf("%s", SavedMessages[i].strReceivers[j]);
+                    if (j < SavedMessages[i].numReceivers - 1) {
+                        printf(", ");
+                    }
+                }
+                printf("\n    Subject: %s\n", SavedMessages[i].strSubject);
+                printf("--------------------\n");
+            }
+
+            printf("[0] - Go back\n\n");
+            printf("Enter the number of the message you want to delete: \n");
+            nChoice = getValidChoice(0, *totalMessages);
+
+            if (nChoice == 0) {
+                bQuit = 1;
+            } 
+            else {
+                int messageIndex = nChoice - 1;
+
+                // Free memory allocated for the message's lines
+                freeMessage(&SavedMessages[messageIndex]);
+
+                // Shift messages to remove the deleted message
+                for (i = messageIndex; i < *totalMessages - 1; i++) {
+                    SavedMessages[i] = SavedMessages[i + 1];
+                }
+                (*totalMessages)--;
+
+                // Save changes to the file
+                saveMessagesToFile(SavedMessages, *totalMessages);
+
+                printf("Message deleted successfully!\n");
+                system("pause");
+            }
+        }
+    }
+}
+
+void AdminViewFilteredMessages(messageTag SavedMessages[MAX_MESSAGES], int totalMessages) {
+    int nChoice, i, j;
+    char filter[MAX_CHAR_USER];
+    int found = 0;
+    int bQuit = 0;
+
+    while (!bQuit) {
+        system("cls");
+        printf("ADMIN MODULE - Filter Messages\n\n");
+        printf("Please choose a filter option:\n");
+        printf("[1] - Filter by Sender\n");
+        printf("[2] - Filter by Recipient\n");
+        printf("[3] - Go back\n\n");
+
+        nChoice = getValidChoice(1, 3);
+
+        if (nChoice == 3) {
+            bQuit = 1; // Set flag to exit the loop
+        } 
+        else {
+            printf("Enter the username to filter by: ");
+            fgets(filter, sizeof(filter), stdin);
+            clean(filter);
+
+            system("cls");
+            printf("Filtered Messages:\n\n");
+
+            if (totalMessages == 0) {
+                printf("No messages found.\n");
+            } else {
+                found = 0; // Reset the found flag for each filter
+                for (i = 0; i < totalMessages; i++) {
+                    if (nChoice == 1 && strcmp(SavedMessages[i].strSender, filter) == 0) {
+                        // Filter by Sender
+                        found = 1;
+                        printf("Message #%d\n", i + 1);
+                        printf("From    : %s\n", SavedMessages[i].strSender);
+
+                        printf("To      : ");
+                        for (j = 0; j < SavedMessages[i].numReceivers; j++) {
+                            printf("%s", SavedMessages[i].strReceivers[j]);
+                            if (j < SavedMessages[i].numReceivers - 1) {
+                                printf(", ");
+                            }
+                        }
+                        printf("\n");
+
+                        printf("Subject : %s\n", SavedMessages[i].strSubject);
+                        printf("Message :\n");
+                        for (j = 0; j < SavedMessages[i].numLines; j++) {
+                            printf("  %s\n", SavedMessages[i].strMessageEntry[j]);
+                        }
+                        printf("--------------------\n");
+                    } 
+                    else if (nChoice == 2) {
+                        // Filter by Recipient
+                        for (j = 0; j < SavedMessages[i].numReceivers; j++) {
+                            if (strcmp(SavedMessages[i].strReceivers[j], filter) == 0 || 
+                                strcasecmp(SavedMessages[i].strReceivers[j], "everyone") == 0) {
+                                found = 1;
+                                printf("Message #%d\n", i + 1);
+                                printf("From    : %s\n", SavedMessages[i].strSender);
+
+                                printf("To      : ");
+                                for (j = 0; j < SavedMessages[i].numReceivers; j++) {
+                                    printf("%s", SavedMessages[i].strReceivers[j]);
+                                    if (j < SavedMessages[i].numReceivers - 1) {
+                                        printf(", ");
+                                    }
+                                }
+                                printf("\n");
+
+                                printf("Subject : %s\n", SavedMessages[i].strSubject);
+                                printf("Message :\n");
+                                for (j = 0; j < SavedMessages[i].numLines; j++) {
+                                    printf("  %s\n", SavedMessages[i].strMessageEntry[j]);
+                                }
+                                printf("--------------------\n");
+                            }
+                        }
+                    }
+                }
+
+                if (!found) {
+                    printf("No messages found for the given filter.\n");
+                }
+            }
+
+            system("pause");
+        }
+    }
+}
+
+void AdminViewAllMessages(messageTag SavedMessages[MAX_MESSAGES], int totalMessages, UserInfo newUser[MAX_USERS], int numUsers) {
+    int i, j, senderExists;
 
     system("cls");
     printf("All Messages:\n\n");
@@ -1906,8 +2062,21 @@ void AdminViewAllMessages(messageTag SavedMessages[MAX_MESSAGES], int totalMessa
         printf("No messages found.\n");
     } else {
         for (i = 0; i < totalMessages; i++) {
+            // Check if the sender exists in the list of users
+            senderExists = 0;
+            for (j = 0; j < numUsers; j++) {
+                if (strcmp(SavedMessages[i].strSender, newUser[j].username) == 0) {
+                    senderExists = 1;
+                    break;
+                }
+            }
+
             printf("Message #%d\n", i + 1);
-            printf("From    : %s\n", SavedMessages[i].strSender);
+            if (senderExists) {
+                printf("From    : %s\n", SavedMessages[i].strSender);
+            } else {
+                printf("From    : DELETED USER\n");
+            }
 
             printf("To      : ");
             for (j = 0; j < SavedMessages[i].numReceivers; j++) {
@@ -1950,13 +2119,13 @@ void AdminHandleMessagesModulePage(UserInfo newUser[MAX_USERS], int numUsers, St
 
         switch (nChoice) {
             case 1:
-                AdminViewAllMessages(messages, *numMessages);
+                AdminViewAllMessages(messages, *numMessages, newUser, numUsers);
                 break;
             case 2:
-                //AdminViewFilteredMessages();
+                AdminViewFilteredMessages(messages, *numMessages);
                 break;
             case 3:
-                //Delete Message();
+                AdminDeleteMessage(messages, numMessages);
                 break;
             case 4:
                 bQuit = 1;
