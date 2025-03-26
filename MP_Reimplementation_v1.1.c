@@ -273,7 +273,8 @@ void viewSentMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int t
 
     if (hasMessages == 0) {
         printf("No Mail Found.\n");
-    } else {
+    } 
+	else {
         i = 0;
         while (i < *sentCount) {
             printMessageDetails(SentMessages[i], i);
@@ -309,7 +310,8 @@ void viewAnnouncements(messageTag SavedMessages[MAX_MESSAGES], int totalMessages
 
     if (hasAnnouncements == 0) {
         printf("No Announcements Found.\n");
-    } else {
+    } 
+	else {
         i = 0;
         while (i < *AnnounceCount) {
             printMessageDetails(Announcements[i], i);
@@ -370,15 +372,18 @@ void viewReceivedMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], i
             // Display messages if any
             if (hasMessages == 0) {
                 printf("No Mail Found.\n");
-            } else {
+            } 
+			else {
                 for (i = 0; i < *receiveCount; i++) {
                     printMessageDetails(Received[i], i);
                 }
             }
-        } else {
+        } 
+		else {
             printf("No messages available.\n");
         }
-    } else {
+    } 
+	else {
         printf("Error: User '%s' does not exist. Cannot view messages.\n", user);
     }
 
@@ -411,7 +416,8 @@ void saveMessagesToFile(messageTag SavedMessages[MAX_MESSAGES], int savedCount) 
             i++;
         }
         fclose(pFile);
-    } else {
+    } 
+	else {
         printf("Error opening %s for writing.\n", MESSAGESFILE);
     }
 }
@@ -419,7 +425,8 @@ void saveMessagesToFile(messageTag SavedMessages[MAX_MESSAGES], int savedCount) 
 void composeMessage(char user[], messageTag SavedMessages[MAX_MESSAGES], int *savedCount, UserInfo LoadedUsers[MAX_USERS], int numUsers) {
     if (*savedCount >= MAX_MESSAGES) {
         printf("Message limit reached. Cannot compose more messages.\n");
-    } else {
+    } 
+	else {
         messageTag newMessage;
         String strTemp;
         int numLines = 0;
@@ -459,7 +466,8 @@ void composeMessage(char user[], messageTag SavedMessages[MAX_MESSAGES], int *sa
                 clean(strTemp);
                 if (strcmp(strTemp, "END") == 0) {
                     done = 1;
-                } else {
+                } 
+				else {
                     newMessage.strMessageEntry[numLines] = malloc(strlen(strTemp) + 1);
                     strcpy(newMessage.strMessageEntry[numLines], strTemp);
                     numLines++;
@@ -542,7 +550,8 @@ void filterUsersByName(UserInfo newUser[MAX_USERS], int numUsers, int userIndex,
 
             if (strlen(newUser[i].description) == 0) {
                 printf("    Description: DEFAULT USER\n\n");
-            } else {
+            } 
+			else {
                 printf("    Description: %s\n\n", newUser[i].description);
             }
             
@@ -681,7 +690,6 @@ void removePersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int use
             if (strcmp(newUser[userIndex].connections[i], connectionName) == 0) {
                 connectionIndex = i;
                 found = 1;
-                break;
             }
         }
 
@@ -701,10 +709,12 @@ void removePersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int use
             }
 
             printf("Connection removed successfully!\n");
-        } else {
+        } 
+		else {
             printf("User not found in your personal connections.\n");
         }
-    } else {
+    } 
+	else {
         printf("You have no personal connections to remove.\n");
     }
 
@@ -712,6 +722,7 @@ void removePersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int use
     saveToUsersFile(newUser, numUsers);
     system("pause");
 }
+
 
 void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex) { // 7.2
     int i, hasConnections = 0;
@@ -778,10 +789,12 @@ void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIn
                 saveToUsersFile(newUser, numUsers);
 
                 printf("Connection added successfully!\n");
-            } else {
+            } 
+			else {
                 printf("You have reached the maximum number of personal connections.\n");
             }
-        } else {
+        } 
+		else {
             printf("User is already in your personal connections.\n");
         }
     } 
@@ -796,11 +809,11 @@ void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIn
 }
 
 void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) { // 7
-    int done = 0, nChoice;
+    int bQuit = 0, nChoice;
 
     // Check if the user was found
     if (userIndex != -1) {
-		while (!done) {
+		while (!bQuit) {
 	        system("cls");
 	        printf("Modify Personal Connections for %s\n\n", newUser[userIndex].name);
 	        printf("[1] Add a Personal Connection\n");
@@ -825,7 +838,7 @@ void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, ch
 	                viewUserConnections(newUser, numUsers, userIndex);
 	                break;
 	            case 5:
-	                done = 1;  // Exit and return to the main menu
+	                bQuit = 1;  
 	                break;
 	                
 		    }	
@@ -840,6 +853,7 @@ void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, ch
 void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) { // 6
     UserInfo userTemp;
     char currentPassword[MAX_CHAR_PASS];
+    char confirmPassword[MAX_CHAR_PASS];
     int i, verified = 0, done = 0;
 
     // Check if the user was found
@@ -858,9 +872,11 @@ void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *user
 
             if (strcmp(currentPassword, "back") == 0) {
                 done = 1;
-            } else if (strcmp(currentPassword, userTemp.password) == 0) {
+            } 
+			else if (strcmp(currentPassword, userTemp.password) == 0) {
                 verified = 1;
-            } else {
+            } 
+			else {
                 printf("Incorrect password. Please try again.\n");
                 system("pause");
             }
@@ -876,53 +892,58 @@ void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *user
 
                 if (strcmp(userTemp.password, "back") == 0) {
                     done = 1;
-                } else {
-                    char confirmPassword[MAX_CHAR_PASS];
+                } 
+				else {
                     printf("Re-enter New Password: ");
                     fgets(confirmPassword, sizeof(confirmPassword), stdin);
                     clean(confirmPassword);
 
                     if (strcmp(confirmPassword, "back") == 0) {
                         done = 1;
-                    } else if (strcmp(userTemp.password, confirmPassword) != 0) {
+                    } 
+					else if (strcmp(userTemp.password, confirmPassword) != 0) {
                         printf("Passwords do not match. Please try again.\n");
                         system("pause");
-                        continue;
-                    }
+                    } 
+					else {
+                        // Input new security question and answer
+                        printf("\nEnter New Security Question: ");
+                        fgets(userTemp.securityQuestion, sizeof(userTemp.securityQuestion), stdin);
+                        clean(userTemp.securityQuestion);
 
-                    // Input new security question and answer
-                    printf("\nEnter New Security Question: ");
-                    fgets(userTemp.securityQuestion, sizeof(userTemp.securityQuestion), stdin);
-                    clean(userTemp.securityQuestion);
-
-                    if (strcmp(userTemp.securityQuestion, "back") == 0) {
-                        done = 1;
-                    } else {
-                        printf("Enter New Security Answer: ");
-                        fgets(userTemp.securityAnswer, sizeof(userTemp.securityAnswer), stdin);
-                        clean(userTemp.securityAnswer);
-
-                        if (strcmp(userTemp.securityAnswer, "back") == 0) {
+                        if (strcmp(userTemp.securityQuestion, "back") == 0) {
                             done = 1;
-                        } else {
-                            // Apply changes to the original user
-                            newUser[userIndex] = userTemp;
+                        } 
+						else {
+                            printf("Enter New Security Answer: ");
+                            fgets(userTemp.securityAnswer, sizeof(userTemp.securityAnswer), stdin);
+                            clean(userTemp.securityAnswer);
 
-                            // Save changes to file
-                            saveToUsersFile(newUser, numUsers);
-                            printf("Security settings updated successfully!\n");
-                            done = 1;
-                            system("pause");
+                            if (strcmp(userTemp.securityAnswer, "back") == 0) {
+                                done = 1;
+                            } 
+							else {
+                                // Apply changes to the original user
+                                newUser[userIndex] = userTemp;
+
+                                // Save changes to file
+                                saveToUsersFile(newUser, numUsers);
+                                printf("Security settings updated successfully!\n");
+                                done = 1;
+                                system("pause");
+                            }
                         }
                     }
                 }
             }
         }
-    } else {
+    } 
+	else {
         printf("User not found.\n");
         system("pause");
     }
 }
+
 
 void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) { // 5
     UserInfo userTemp;
@@ -1055,7 +1076,7 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, i
     messageTag Received[MAX_MESSAGES];
     
 
-	strcpy(sender, username); // Copy the username to sender
+	strcpy(sender, username); 
 	loadAllMessagesFiles(messages ,&numMessages);
     do {
         system("cls");
@@ -1147,10 +1168,12 @@ void forgotPassword(UserInfo newUser[MAX_USERS], int numUsers, String resetReque
                     (*numResetRequests)++;
                     printf("Password reset request has been sent to the administrator.\n");
                     bGoBack = 1;
-                } else {
+                } 
+				else {
                     printf("Incorrect answer. Please try again.\n");
                 }
-            } else {
+            } 
+			else {
                 printf("Username not found. Please try again.\n");
             }
         }
@@ -1353,19 +1376,22 @@ void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers) {
                 parseConnections(newUser[i].connections, tempConnections, &newUser[i].numConnections);
                 
                 i++;
-            } else {
+            } 
+			else {
                 printf("Error reading user data. Skipping invalid entry.\n");
             }
         }
         fclose(pFile);
-    } else {
+    } 
+	else {
         printf("Error reading %s. Initializing with 0 users.\n", USERSFILE);
         *numUsers = 0;
     }
 }
 
 int isUserValid(String username, String password, UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not 
-    for (int i = 0; i < numUsers; i++) {
+	int i;
+    for (i = 0; i < numUsers; i++) {
         if (strcmp(newUser[i].username, username) == 0 && strcmp(newUser[i].password, password) == 0) {
             return 1; // Found valid user
         }
@@ -1374,7 +1400,8 @@ int isUserValid(String username, String password, UserInfo newUser[MAX_USERS], i
 }
 
 int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not, returns the index of the found username
-    for (int i = 0; i < numUsers; i++) {
+	int i;
+    for (i = 0; i < numUsers; i++) {
         if (strcmp(newUser[i].username, username) == 0 && strcmp(newUser[i].password, password) == 0) {
             return i; //Returns the found user index
         }
@@ -1486,7 +1513,8 @@ void saveToAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //Used in changePasswo
         // Save the number of users first
         fprintf(pFile, "%s\n", adminPass);
         fclose(pFile);
-    } else {
+    } 
+	else {
         printf("Error generating %s\n", ADMINPASSFILE);
     }
 }
@@ -1544,7 +1572,8 @@ void changeAdminPass(char adminPass[MAX_CHAR_PASS]) {
 
         if (strcmp(currentPass, "back") == 0) {
             bGoBack = 1;
-        } else if (strcmp(currentPass, adminPass) == 0) {
+        } 
+		else if (strcmp(currentPass, adminPass) == 0) {
             // Get new password
             do {
                 printf("Enter new password: ");
@@ -1566,7 +1595,8 @@ void changeAdminPass(char adminPass[MAX_CHAR_PASS]) {
             printf("Password changed successfully!\n");
             system("pause");
             bGoBack = 1;
-        } else {
+        } 
+		else {
             printf("Incorrect current password. Try again.\n");
             system("pause");
         }
@@ -1606,11 +1636,13 @@ void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS]
 
         if (strcmp(enteredPass, "back") == 0) {
             bGoBack = 1;
-        } else if (strcmp(enteredPass, adminPass) == 0) {
+        } 
+		else if (strcmp(enteredPass, adminPass) == 0) {
             printf("Admin login successful!\n");
             AdminModulePage(adminPass, newUser, numUsers, resetRequests, numResetRequests);
 			system("pause");
-        } else {
+        } 
+		else {
             attempts--;
             printf("Incorrect password. Attempts left: %d\n", attempts);
             system("pause");
@@ -1630,7 +1662,8 @@ void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, S
         if (*numResetRequests == 0) {
             printf("No password reset requests.\n");
             bQuit = 1;
-        } else {
+        } 
+		else {
             printf("Users who have requested a password reset:\n\n");
             for (i = 0; i < *numResetRequests; i++) {
                 userIndex = getUserIndexNoPassword(resetRequests[i], newUser, numUsers);
@@ -1638,7 +1671,8 @@ void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, S
                     printf("[%d] Username: %s\n", i + 1, newUser[userIndex].username);
                     printf("    Name: %s\n", newUser[userIndex].name);
                     printf("    Description: %s\n\n", strlen(newUser[userIndex].description) == 0 ? "DEFAULT USER" : newUser[userIndex].description);
-                } else {
+                } 
+				else {
                     printf("[%d] Username: %s (User not found)\n\n", i + 1, resetRequests[i]);
                 }
             }
@@ -1661,11 +1695,13 @@ void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, S
                     (*numResetRequests)--;
 
                     saveToUsersFile(newUser, numUsers);
-                } else {
+                } 
+				else {
                     printf("User '%s' not found.\n", resetRequests[nChoice - 1]);
                 }
                 system("pause");
-            } else {
+            } 
+			else {
                 bQuit = 1;
             }
         }
@@ -1673,12 +1709,13 @@ void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, S
 }
 
 void cipherPassword(char *password, char *cipheredPassword) {
-    int shift = 3; // Caesar cipher shift
-    for (int i = 0; password[i] != '\0'; i++) {
+    int shift = 3, i; // Caesar cipher shift
+    for ( i = 0; password[i] != '\0'; i++) {
         cipheredPassword[i] = password[i] + shift;
     }
     cipheredPassword[strlen(password)] = '\0';
 }
+
 void AdminViewAllUsers(UserInfo newUser[MAX_USERS], int numUsers) {
     int i, j;
     char cipheredPassword[MAX_CHAR_PASS];
@@ -1694,13 +1731,15 @@ void AdminViewAllUsers(UserInfo newUser[MAX_USERS], int numUsers) {
 
         if (strlen(newUser[i].description) == 0) {
             printf("    Description: DEFAULT USER\n");
-        } else {
+        } 
+		else {
             printf("    Description: %s\n", newUser[i].description);
         }
 
         if (newUser[i].isAccountLocked) {
             printf("    Account Status: Locked\n");
-        } else {
+        } 
+		else {
             printf("    Account Status: Unlocked\n");
         }
 
@@ -1714,7 +1753,8 @@ void AdminViewAllUsers(UserInfo newUser[MAX_USERS], int numUsers) {
                 }
             }
             printf("\n\n");
-        } else {
+        } 
+		else {
             printf("    Connections: NONE\n\n");
         }
     }
@@ -1776,20 +1816,22 @@ void editUserDetails(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) {
         saveToUsersFile(newUser, numUsers);
     }
 }
+
 void deleteUser(UserInfo newUser[MAX_USERS], int *numUsers, int userIndex) {
-    int i, j;
+    int i, j, k, found;
 
     // Remove the user from all other users' connections
     for (i = 0; i < *numUsers; i++) {
         if (i != userIndex) {
-            for (j = 0; j < newUser[i].numConnections; j++) {
+            found = 0;
+            for (j = 0; j < newUser[i].numConnections && !found; j++) {
                 if (strcmp(newUser[i].connections[j], newUser[userIndex].username) == 0) {
                     // Shift connections to remove the deleted user
-                    for (int k = j; k < newUser[i].numConnections - 1; k++) {
+                    for (k = j; k < newUser[i].numConnections - 1; k++) {
                         strcpy(newUser[i].connections[k], newUser[i].connections[k + 1]);
                     }
                     newUser[i].numConnections--;
-                    break;
+                    found = 1;  // Mark as found to skip remaining checks
                 }
             }
         }
@@ -1806,6 +1848,7 @@ void deleteUser(UserInfo newUser[MAX_USERS], int *numUsers, int userIndex) {
     printf("User deleted successfully!\n");
     system("pause");
 }
+
 
 void AdminModifyUsers(UserInfo newUser[MAX_USERS], int numUsers) {
     int nChoice, bQuit = 0;
