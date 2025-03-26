@@ -54,8 +54,12 @@ void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers);
 void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers);
 int isUserValid(String username, String password, UserInfo newUser[MAX_USERS], int numUsers);
 int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], int numUsers);
-void Login(UserInfo newUser[MAX_USERS], int *numUsers);
-void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
+void Login(UserInfo newUser[MAX_USERS], int *numUsers,
+    int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+    messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) ;
+void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, String resetRequests[MAX_USERS], int *numResetRequests, 
+        int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+        messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]);
 int isUsernameTaken(UserInfo newUser[MAX_USERS], int numUsers, char *username);
 void createNewAccount(UserInfo newUser[MAX_USERS], int *numUsers);
 /********************************************************************************************/
@@ -65,8 +69,12 @@ void saveToAdminPassFile(char adminPass[MAX_CHAR_PASS]);
 void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]);
 void createNewAdminPass(char adminPass[MAX_CHAR_PASS]);
 void changeAdminPass(char adminPass[MAX_CHAR_PASS]);
-void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
-void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
+void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests, 
+    int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+    messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) ;
+void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests,
+        int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+        messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]);
 void forgotPassword(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
 void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
 void editUserDetails(UserInfo newUser[MAX_USERS], int numUsers, int userIndex);
@@ -95,10 +103,12 @@ void viewUserConnections(UserInfo newUser[MAX_USERS], int numUsers, int userInde
 void removePersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 7.3
 void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex); // 7.2
 void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); // 7.1
-void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) ; //  7
-void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex); // 6
+void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, int userIndex); //  7
+void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) ; // 6
 void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex); //5
-void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex);
+void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex, 
+    int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+    messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]);
 /********************************************************************************************/
 
 /*****************
@@ -252,7 +262,6 @@ void printMessageDetails(messageTag message, int index) {
         j++;
     }
     printf("--------------------\n");
-    system("pause");
 }
 
 void viewSentMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag SentMessages[MAX_MESSAGES], int *sentCount) {
@@ -279,9 +288,9 @@ void viewSentMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int t
         while (i < *sentCount) {
             printMessageDetails(SentMessages[i], i);
             i++;
+            system("pause");
         }
     }
-    system("pause");
 }
 
 void viewAnnouncements(messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag Announcements[MAX_MESSAGES], int *AnnounceCount) {
@@ -316,9 +325,9 @@ void viewAnnouncements(messageTag SavedMessages[MAX_MESSAGES], int totalMessages
         while (i < *AnnounceCount) {
             printMessageDetails(Announcements[i], i);
             i++;
+            system("pause");
         }
     }
-    system("pause");
 }
 
 void viewReceivedMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag Received[MAX_MESSAGES], int *receiveCount, UserInfo LoadedUsers[MAX_USERS], int numUsers) {
@@ -376,6 +385,7 @@ void viewReceivedMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], i
 			else {
                 for (i = 0; i < *receiveCount; i++) {
                     printMessageDetails(Received[i], i);
+                    system("pause");
                 }
             }
         } 
@@ -386,8 +396,8 @@ void viewReceivedMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], i
 	else {
         printf("Error: User '%s' does not exist. Cannot view messages.\n", user);
     }
-
-    system("pause");
+	
+	system("pause");
 }
 
 void saveMessagesToFile(messageTag SavedMessages[MAX_MESSAGES], int savedCount) {
@@ -808,7 +818,7 @@ void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIn
     system("pause");
 }
 
-void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) { // 7
+void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 7
     int bQuit = 0, nChoice;
 
     // Check if the user was found
@@ -850,11 +860,11 @@ void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, ch
 	}
 }
 
-void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) { // 6
+void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 6
     UserInfo userTemp;
     char currentPassword[MAX_CHAR_PASS];
     char confirmPassword[MAX_CHAR_PASS];
-    int i, verified = 0, done = 0;
+    int verified = 0, done = 0;
 
     // Check if the user was found
     if (userIndex != -1) {
@@ -1063,21 +1073,14 @@ void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *use
     }
 }
 
-void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) {
+void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex, 
+                    int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+                    messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
     int nChoice, bQuit = 0;
-    int sentCount = 0;
-    int announcementCount = 0;
-    int receiveCount = 0;
-    int numMessages = 0;
     char sender[MAX_CHAR_USER];
-	messageTag messages[MAX_MESSAGES];
-    messageTag sentMessages[MAX_MESSAGES];
-    messageTag Announcements[MAX_MESSAGES];
-    messageTag Received[MAX_MESSAGES];
-    
 
 	strcpy(sender, username); 
-	loadAllMessagesFiles(messages ,&numMessages);
+	loadAllMessagesFiles(messages ,numMessages);
     do {
         system("cls");
         printf("Welcome to the User Module, %s!\n\n", username);
@@ -1096,28 +1099,28 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, i
 
         switch (nChoice) {
             case 1:
-                composeMessage(sender, messages, &numMessages, newUser, numUsers);
+                composeMessage(sender, messages, numMessages, newUser, numUsers);
                 break;
             case 2:
-                viewReceivedMessages(sender, messages, numMessages, Received, &receiveCount, newUser, numUsers);
+                viewReceivedMessages(sender, messages, *numMessages, Received, receiveCount, newUser, numUsers);
                 break;
             case 3:
-                viewSentMessages(sender, messages, numMessages, sentMessages, &sentCount);
+                viewSentMessages(sender, messages, *numMessages, sentMessages, sentCount);
                 break;
             case 4:
-                viewAnnouncements(messages, numMessages, Announcements, &announcementCount);
+                viewAnnouncements(messages, *numMessages, Announcements, announcementCount);
                 break;
             case 5:
                 modifyPersonalContents(newUser, numUsers, username, userIndex);
                 break;
             case 6:
-                modifyAccountSecurity(newUser, numUsers, username, userIndex);
+                modifyAccountSecurity(newUser, numUsers, userIndex);
                 break;
             case 7:
-                modifyPersonalConnectionsPage(newUser, numUsers, username, userIndex, messages, &numMessages);
+                modifyPersonalConnectionsPage(newUser, numUsers, userIndex);
                 break;
             case 8:
-                browseUsers(newUser, numUsers, userIndex, username, messages, &numMessages);
+                browseUsers(newUser, numUsers, userIndex, username, messages, numMessages);
                 break;
             case 9:
                 printf("\nLogging out...\n");
@@ -1193,7 +1196,7 @@ int isUsernameTaken(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
 
 void createNewAccount(UserInfo newUser[MAX_USERS], int *numUsers) {
     UserInfo userTemp; // Place inputs here for safekeeping
-    int bGoBack = 0, numLines;
+    int bGoBack = 0;
     int bUsernameTaken;
     String confirmPassword; // Used for re-entering password
 
@@ -1409,7 +1412,9 @@ int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], 
     return -1; // User index not found
 }
 
-void Login(UserInfo newUser[MAX_USERS], int *numUsers) { //TO FIX: LOCKING USER AFTER MANY ATTEMPTS
+void Login(UserInfo newUser[MAX_USERS], int *numUsers,
+            int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+            messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) { //TO FIX: LOCKING USER AFTER MANY ATTEMPTS
     String nameInput;
     String passInput;
     int userIndex = -1;  // Initialize to -1 to indicate no valid user yet
@@ -1441,7 +1446,7 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers) { //TO FIX: LOCKING USER 
             else if (userIndex != -1 && isUserValid(nameInput, passInput, newUser, *numUsers)) {
                 printf("Login successful!\n");
                 system("pause");
-                userModulePage(newUser, *numUsers, nameInput, userIndex);
+                userModulePage(newUser, *numUsers, nameInput, userIndex,sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
                 return;  // Successful login, exit the function
             } 
             else {
@@ -1467,7 +1472,9 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers) { //TO FIX: LOCKING USER 
 }
 
 
-void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
+void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, String resetRequests[MAX_USERS], int *numResetRequests, 
+                int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+                messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
     int nChoice, bQuit = 0;
 
     do {
@@ -1483,13 +1490,13 @@ void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *
 
         switch (nChoice) {
             case 1:
-                Login(newUser, numUsers);
+                Login(newUser, numUsers, sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
                 break;
             case 2:
                 createNewAccount(newUser, numUsers);
                 break;
             case 3:
-                AdminModuleLogin(adminPass, newUser, *numUsers, resetRequests, numResetRequests);
+                AdminModuleLogin(adminPass, newUser, *numUsers, resetRequests, numResetRequests,sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
                 break;
             case 4:
                 forgotPassword(newUser, *numUsers, resetRequests, numResetRequests);
@@ -1507,7 +1514,6 @@ ADMIN FUNCTIONS
 
 void saveToAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //Used in changePassword file, saves a new password to AdminPassFIle if called
 	FILE *pFile = fopen(ADMINPASSFILE, "wt"); // Open in write mode
-    int i;
 
     if (pFile != NULL) {
         // Save the number of users first
@@ -1605,7 +1611,6 @@ void changeAdminPass(char adminPass[MAX_CHAR_PASS]) {
 
 void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //loads information from AdminPassFile (creates new file if not initialized yet)
     FILE *pFile;
-    int isEmpty = 1;
 
     // Open file in read mode
     pFile = fopen(ADMINPASSFILE, "rt");
@@ -1620,35 +1625,6 @@ void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //loads information 
 	}
 }
 
-void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
-    String enteredPass;
-    int attempts = 3;
-    int bGoBack = 0;
-    
-	loadFromAdminPassFile(adminPass);
-
-    while (attempts > 0 && !bGoBack) {
-        system("cls");
-        printf("Enter admin password or type \"back\" to return:\n");
-        printf("\nEnter Password: ");
-        fgets(enteredPass, sizeof(enteredPass), stdin);
-        clean(enteredPass);
-
-        if (strcmp(enteredPass, "back") == 0) {
-            bGoBack = 1;
-        } 
-		else if (strcmp(enteredPass, adminPass) == 0) {
-            printf("Admin login successful!\n");
-            AdminModulePage(adminPass, newUser, numUsers, resetRequests, numResetRequests);
-			system("pause");
-        } 
-		else {
-            attempts--;
-            printf("Incorrect password. Attempts left: %d\n", attempts);
-            system("pause");
-        }
-    }
-}
 
 void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     int i, userIndex;
@@ -1849,7 +1825,6 @@ void deleteUser(UserInfo newUser[MAX_USERS], int *numUsers, int userIndex) {
     system("pause");
 }
 
-
 void AdminModifyUsers(UserInfo newUser[MAX_USERS], int numUsers) {
     int nChoice, bQuit = 0;
     int targetIndex;
@@ -1884,9 +1859,10 @@ void AdminDeleteUsers(UserInfo newUser[MAX_USERS], int *numUsers) {
     }
 }
 
-
-void AdminHandleUsersModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
+void AdminHandleUsersModulePage(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     int nChoice, bQuit = 0;
+    
+    
     while (!bQuit) {
         system("cls");
         printf("ADMIN MODULE - Users Module\n");
@@ -1920,7 +1896,78 @@ void AdminHandleUsersModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[
     }
 }
 
-void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
+void AdminViewAllMessages(messageTag SavedMessages[MAX_MESSAGES], int totalMessages) {
+    int i, j;
+
+    system("cls");
+    printf("All Messages:\n\n");
+
+    if (totalMessages == 0) {
+        printf("No messages found.\n");
+    } else {
+        for (i = 0; i < totalMessages; i++) {
+            printf("Message #%d\n", i + 1);
+            printf("From    : %s\n", SavedMessages[i].strSender);
+
+            printf("To      : ");
+            for (j = 0; j < SavedMessages[i].numReceivers; j++) {
+                printf("%s", SavedMessages[i].strReceivers[j]);
+                if (j < SavedMessages[i].numReceivers - 1) {
+                    printf(", ");
+                }
+            }
+            printf("\n");
+
+            printf("Subject : %s\n", SavedMessages[i].strSubject);
+            printf("Message :\n");
+            for (j = 0; j < SavedMessages[i].numLines; j++) {
+                printf("  %s\n", SavedMessages[i].strMessageEntry[j]);
+            }
+            printf("--------------------\n");
+        }
+    }
+
+    system("pause");
+}
+
+void AdminHandleMessagesModulePage(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests,
+                                 int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+                                messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
+    int nChoice, bQuit = 0;
+
+    loadAllMessagesFiles(messages ,numMessages);
+    while (!bQuit) {
+        system("cls");
+        printf("ADMIN MODULE - Message Module\n");
+        printf("\n");
+        printf("Please choose an option:\n\n");
+        printf("[1] - View Messages\n");
+        printf("[2] - View Messages by Filter\n");
+        printf("[3] - Delete Message\n");
+        printf("[4] - Quit\n\n");
+
+        nChoice = getValidChoice(1, 4);
+
+        switch (nChoice) {
+            case 1:
+                AdminViewAllMessages(messages, *numMessages);
+                break;
+            case 2:
+                //AdminViewFilteredMessages();
+                break;
+            case 3:
+                //Delete Message();
+                break;
+            case 4:
+                bQuit = 1;
+                break;
+        }
+    }
+}
+
+void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests,
+                    int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+                    messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
     int nChoice;
     int bQuit = 0;
 
@@ -1938,10 +1985,10 @@ void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS],
 
         switch (nChoice) {
             case 1:
-                AdminHandleUsersModulePage(adminPass, newUser, numUsers, resetRequests, numResetRequests);
+                AdminHandleUsersModulePage(newUser, numUsers, resetRequests, numResetRequests);
                 break;
             case 2:
-                // adminHandleMessagesModule();
+                AdminHandleMessagesModulePage(newUser, numUsers, resetRequests, numResetRequests, sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
                 break;
             case 3:
                 changeAdminPass(adminPass);
@@ -1953,6 +2000,37 @@ void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS],
     }
 }
 
+void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests, 
+                    int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+                    messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
+    String enteredPass;
+    int attempts = 3;
+    int bGoBack = 0;
+    
+	loadFromAdminPassFile(adminPass);
+
+    while (attempts > 0 && !bGoBack) {
+        system("cls");
+        printf("Enter admin password or type \"back\" to return:\n");
+        printf("\nEnter Password: ");
+        fgets(enteredPass, sizeof(enteredPass), stdin);
+        clean(enteredPass);
+
+        if (strcmp(enteredPass, "back") == 0) {
+            bGoBack = 1;
+        } 
+		else if (strcmp(enteredPass, adminPass) == 0) {
+            printf("Admin login successful!\n");
+            AdminModulePage(adminPass, newUser, numUsers, resetRequests, numResetRequests, sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
+			system("pause");
+        } 
+		else {
+            attempts--;
+            printf("Incorrect password. Attempts left: %d\n", attempts);
+            system("pause");
+        }
+    }
+}
 int main() {
     int nChoice, bQuit = 0; // Flags
     int numUsers; // No. of users
@@ -1961,7 +2039,17 @@ int main() {
     String resetRequests[MAX_USERS];
     int numResetRequests = 0;
 
+    //MESSAGES VARIABLES
+    int sentCount = 0;
+    int announcementCount = 0;
+    int receiveCount = 0;
+    int numMessages = 0;
+	messageTag messages[MAX_MESSAGES];
+    messageTag sentMessages[MAX_MESSAGES];
+    messageTag Announcements[MAX_MESSAGES];
+    messageTag Received[MAX_MESSAGES];
     numUsers = 0;
+
     loadFromUsersFile(newUser, &numUsers);
 
     do {
@@ -1974,10 +2062,10 @@ int main() {
         nChoice = getValidChoice(1, 3);
 
         if (nChoice == 1) {
-            LoginPage(adminPass, newUser, &numUsers, resetRequests, &numResetRequests);
+            LoginPage(adminPass, newUser, &numUsers, resetRequests, &numResetRequests, &sentCount, &announcementCount, &receiveCount, &numMessages, messages, sentMessages, Announcements, Received);
         } 
 		else if (nChoice == 2) {
-            AdminModuleLogin(adminPass, newUser, numUsers, resetRequests, &numResetRequests);
+            AdminModuleLogin(adminPass, newUser, numUsers, resetRequests, &numResetRequests, &sentCount, &announcementCount, &receiveCount, &numMessages, messages, sentMessages, Announcements, Received);
         } 
 		else if (nChoice == 3) {
             bQuit = 1;
@@ -1987,7 +2075,3 @@ int main() {
 
     return 0;
 }
-
-
-
-
