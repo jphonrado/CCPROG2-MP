@@ -1,3 +1,7 @@
+/*********************************************************************************************************
+This is to certify that this project is my own work, based on my personal efforts in studying and applying the concepts learned. I have constructed the functions and their respective algorithms and corresponding code by myself. The program was run, tested, and debugged by my own efforts. I further certify that I have not copied in part or whole or otherwise plagiarized the work of other students and/or persons.
+Jose Paulo D. Honrado, DLSU ID# 12327670
+*********************************************************************************************************/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -118,7 +122,7 @@ void addUserConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex,
 void parseConnections(char connections[MAX_CONNECTIONS][MAX_CHAR_USER], char tempConnections[], int *numConnections);
 void deleteUser(UserInfo newUser[MAX_USERS], int *numUsers, int userIndex);
 void editUserDetails(UserInfo newUser[MAX_USERS], int numUsers, int userIndex);
-/*********************************************************/
+/****************************************************************************************/
 /*****************
 UTILITY FUNCTIONS
 ******************/
@@ -140,7 +144,7 @@ int getValidChoice(int lower, int upper) {
         validInput = scanf("%d", &choice);
 
         // Clear input buffer
-        while (getchar() != '\n');
+        while (getchar() != '\n'); //to clear input buffer
 
         if (validInput != 1 || choice < lower || choice > upper) {
             printf("Invalid input, please choose one of the choices (%d-%d).\n", lower, upper);
@@ -536,7 +540,7 @@ void viewUserPage(UserInfo newUser[MAX_USERS], int numUsers, int targetIndex, in
 	        printf("Description: %s\n\n", newUser[targetIndex].description);
 	    }
 	
-    // Display options for interaction
+
 	    printf("[1] - Add as Personal Connection\n");
 	    printf("[2] - Send Private Message\n");
 	    printf("[3] - Go back\n\n");
@@ -1073,6 +1077,7 @@ void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *use
                     saveToUsersFile(newUser, numUsers);
                     printf("Changes saved successfully!\n");
                     done = 1;  // Exit after successful modification
+                    system("pause");
                 }
             }
         }
@@ -2211,6 +2216,7 @@ void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS]
         }
     }
 }
+
 int main() {
    int nChoice, bQuit = 0; // Flags
    int numUsers; // No. of users
