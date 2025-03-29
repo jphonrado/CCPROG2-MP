@@ -126,15 +126,37 @@ void editUserDetails(UserInfo newUser[MAX_USERS], int numUsers, int userIndex);
 /*****************
 UTILITY FUNCTIONS
 ******************/
+/**
+ * @brief Removes the trailing newline character from a string, if present.
+ * 
+ * @param strTemp - Pointer to the string to be cleaned.
+ * 
+ * @return void
+ * 
+ * Pre-condition: strTemp must be a valid, null-terminated string or NULL.
+ * Post-condition: If the string contains a trailing newline character ('\n'), 
+ *                 it is replaced with a null terminator ('\0').
+ */
 void clean(char *strTemp) {
     if (strTemp != NULL) {
         size_t len = strlen(strTemp);
         if (len > 0 && strTemp[len - 1] == '\n') 
             strTemp[len - 1] = '\0';
     }
-
 }
 
+/**
+ * @brief Prompts the user to enter a valid choice within a specified range.
+ * 
+ * @param lower - The lower bound of the valid range (inclusive).
+ * @param upper - The upper bound of the valid range (inclusive).
+ * 
+ * @return int - The valid choice entered by the user.
+ * 
+ * Pre-condition: The range [lower, upper] must be valid (lower <= upper).
+ * Post-condition: The function ensures that the returned value is within the specified range.
+ *                 If the user enters invalid input, they are prompted to try again.
+ */
 int getValidChoice(int lower, int upper) {
     int choice;
     int validInput;
@@ -144,7 +166,7 @@ int getValidChoice(int lower, int upper) {
         validInput = scanf("%d", &choice);
 
         // Clear input buffer
-        while (getchar() != '\n'); //to clear input buffer
+        while (getchar() != '\n'); // to clear input buffer
 
         if (validInput != 1 || choice < lower || choice > upper) {
             printf("Invalid input, please choose one of the choices (%d-%d).\n", lower, upper);
@@ -160,6 +182,20 @@ USER MODULE FUNCTIONS
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 // Messaging Functions
 
+/**
+ * @brief Splits a comma-separated list of recipients into an array of individual receiver names.
+ * 
+ * @param receiverBuffer - A string containing the comma-separated list of recipients.
+ * @param receiversArray - A 2D array where each row will store an individual receiver name.
+ * @param numReceivers - Pointer to an integer that will store the total number of receivers parsed.
+ * 
+ * @return void
+ * 
+ * Pre-condition: receiverBuffer must be a valid, null-terminated string. 
+ *                receiversArray must have enough space to store the parsed receiver names.
+ * Post-condition: The receiversArray is populated with individual receiver names, and 
+ *                 numReceivers is updated with the count of parsed receivers.
+ */
 void splitReceivers(char *receiverBuffer, char receiversArray[MAX_RECEIVERS][MAX_RECEIVER_NAME], int *numReceivers) {
     *numReceivers = 0;
     char *token = strtok(receiverBuffer, ",");
@@ -173,6 +209,19 @@ void splitReceivers(char *receiverBuffer, char receiversArray[MAX_RECEIVERS][MAX
     }
 }
 
+/**
+ * @brief Frees the memory allocated for the lines of a message.
+ * 
+ * @param msg - Pointer to the messageTag structure whose memory is to be freed.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `msg` parameter must point to a valid messageTag structure 
+ *                with dynamically allocated memory for its `strMessageEntry` array.
+ * Post-condition: All memory allocated for the `strMessageEntry` array and its elements 
+ *                 is freed, and the structure is left in a state where it no longer holds 
+ *                 any dynamically allocated memory.
+ */
 void freeMessage(messageTag *msg) {
     int i = 0;
     while (i < msg->numLines) {
@@ -182,14 +231,41 @@ void freeMessage(messageTag *msg) {
     free(msg->strMessageEntry);
 }
 
+/**
+ * @brief Frees the memory allocated for all messages in an array of messageTag structures.
+ * 
+ * @param msgs - Array of messageTag structures whose memory is to be freed.
+ * @param count - The number of messages in the array.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `msgs` array must contain valid messageTag structures, 
+ *                and each structure must have dynamically allocated memory for its `strMessageEntry` array.
+ * Post-condition: All memory allocated for the `strMessageEntry` arrays and their elements 
+ *                 is freed, and the array is left in a state where it no longer holds 
+ *                 any dynamically allocated memory.
+ */
 void freeAllMessages(messageTag msgs[MAX_MESSAGES], int count) {
     int i = 0;
     while (i < count) {
-        freeMessage(&msgs[i]);
+        freeMessage(&msgs[i]); // Free memory for each message
         i++;
     }
 }
 
+/**
+ * @brief Checks if a given receiver is valid (either a specific user or "everyone").
+ * 
+ * @param receiver - The name of the receiver to validate.
+ * @param LoadedUsers - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * 
+ * @return int - Returns 1 if the receiver is valid, 0 otherwise.
+ * 
+ * Pre-condition: receiver must be a valid, null-terminated string. 
+ *                LoadedUsers must contain valid user data, and numUsers must accurately reflect the number of users.
+ * Post-condition: The function determines if the receiver is valid and returns the result.
+ */
 int isValidReceiver(char receiver[], UserInfo LoadedUsers[MAX_USERS], int numUsers) {
     int i;
 
@@ -210,6 +286,20 @@ int isValidReceiver(char receiver[], UserInfo LoadedUsers[MAX_USERS], int numUse
     return 0;  // Receiver not found
 }
 
+/**
+ * @brief Loads all messages from the MESSAGESFILE into the Messages array.
+ * 
+ * @param Messages - Array of messageTag structures where the loaded messages will be stored.
+ * @param numMessages - Pointer to an integer that will store the total number of messages loaded.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The MESSAGESFILE must exist and contain valid message data. 
+ *                Messages must have enough space to store all the loaded messages.
+ * Post-condition: The Messages array is populated with the loaded messages, and 
+ *                 numMessages is updated with the count of loaded messages.
+ *                 Dynamically allocated memory is used for message lines and must be freed later.
+ */
 void loadAllMessagesFiles(messageTag Messages[MAX_MESSAGES], int *numMessages) {
     FILE *pFile = fopen(MESSAGESFILE, "rt");
     char strTemp[21];
@@ -248,13 +338,26 @@ void loadAllMessagesFiles(messageTag Messages[MAX_MESSAGES], int *numMessages) {
             i++;
         }
         fclose(pFile);
+    } else {
+        printf("Error opening %s for reading.\n", MESSAGESFILE);
     }
 }
 
+/**
+ * @brief Displays the details of a specific message, including sender, recipients, subject, and message content.
+ * 
+ * @param message - The messageTag structure containing the details of the message to be displayed.
+ * @param index - The index of the message (used for display purposes).
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `message` parameter must be a valid messageTag structure with properly initialized fields.
+ * Post-condition: The details of the message are printed to the console in a formatted manner.
+ */
 void printMessageDetails(messageTag message, int index) {
     int j;
-	
-	system("cls");
+    
+    system("cls");
     printf("Message #%d\n", index + 1);
     printf("From    : %s\n", message.strSender);
 
@@ -279,10 +382,27 @@ void printMessageDetails(messageTag message, int index) {
     printf("--------------------\n");
 }
 
+/**
+ * @brief Displays all messages sent by a specific user.
+ * 
+ * @param user - The username of the sender whose sent messages are to be displayed.
+ * @param SavedMessages - Array of all saved messages in the system.
+ * @param totalMessages - The total number of messages in the system.
+ * @param SentMessages - Array where the messages sent by the user will be stored.
+ * @param sentCount - Pointer to an integer that will store the count of messages sent by the user.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `SavedMessages` array must contain valid messageTag structures, 
+ *                and `totalMessages` must accurately reflect the number of messages in the array.
+ * Post-condition: The `SentMessages` array is populated with messages sent by the user, 
+ *                 and `sentCount` is updated with the count of these messages. 
+ *                 The details of each message are displayed to the console.
+ */
 void viewSentMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag SentMessages[MAX_MESSAGES], int *sentCount) {
     int i = 0, hasMessages = 0;
-	
-	system("cls");
+    
+    system("cls");
     *sentCount = 0;
     if (totalMessages > 0) {
         while (i < totalMessages) {
@@ -298,7 +418,7 @@ void viewSentMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int t
     if (hasMessages == 0) {
         printf("No Mail Found.\n");
     } 
-	else {
+    else {
         i = 0;
         while (i < *sentCount) {
             printMessageDetails(SentMessages[i], i);
@@ -308,10 +428,26 @@ void viewSentMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int t
     }
 }
 
+/**
+ * @brief Displays all announcements (messages sent to "everyone") from the saved messages.
+ * 
+ * @param SavedMessages - Array of all saved messages in the system.
+ * @param totalMessages - The total number of messages in the system.
+ * @param Announcements - Array where the announcements will be stored.
+ * @param AnnounceCount - Pointer to an integer that will store the count of announcements.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `SavedMessages` array must contain valid messageTag structures, 
+ *                and `totalMessages` must accurately reflect the number of messages in the array.
+ * Post-condition: The `Announcements` array is populated with messages sent to "everyone," 
+ *                 and `AnnounceCount` is updated with the count of these announcements. 
+ *                 The details of each announcement are displayed to the console.
+ */
 void viewAnnouncements(messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag Announcements[MAX_MESSAGES], int *AnnounceCount) {
     int i = 0, j, hasAnnouncements = 0;
-	
-	system("cls");
+    
+    system("cls");
     *AnnounceCount = 0;
     if (totalMessages > 0) {
         while (i < totalMessages) {
@@ -335,7 +471,7 @@ void viewAnnouncements(messageTag SavedMessages[MAX_MESSAGES], int totalMessages
     if (hasAnnouncements == 0) {
         printf("No Announcements Found.\n");
     } 
-	else {
+    else {
         i = 0;
         while (i < *AnnounceCount) {
             printMessageDetails(Announcements[i], i);
@@ -344,6 +480,27 @@ void viewAnnouncements(messageTag SavedMessages[MAX_MESSAGES], int totalMessages
         }
     }
 }
+
+/**
+ * @brief Displays all messages received by a specific user.
+ * 
+ * @param user - The username of the recipient whose received messages are to be displayed.
+ * @param SavedMessages - Array of all saved messages in the system.
+ * @param totalMessages - The total number of messages in the system.
+ * @param Received - Array where the messages received by the user will be stored.
+ * @param receiveCount - Pointer to an integer that will store the count of messages received by the user.
+ * @param LoadedUsers - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `SavedMessages` array must contain valid messageTag structures, 
+ *                and `totalMessages` must accurately reflect the number of messages in the array.
+ *                The `LoadedUsers` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: The `Received` array is populated with messages received by the user, 
+ *                 and `receiveCount` is updated with the count of these messages. 
+ *                 The details of each message are displayed to the console.
+ */
 
 void viewReceivedMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], int totalMessages, messageTag Received[MAX_MESSAGES], int *receiveCount, UserInfo LoadedUsers[MAX_USERS], int numUsers) {
     int i, j, userFound = 0, hasMessages = 0;
@@ -397,56 +554,83 @@ void viewReceivedMessages(char user[], messageTag SavedMessages[MAX_MESSAGES], i
             if (hasMessages == 0) {
                 printf("No Mail Found.\n");
             } 
-			else {
+            else {
                 for (i = 0; i < *receiveCount; i++) {
                     printMessageDetails(Received[i], i);
                     system("pause");
                 }
             }
         } 
-		else {
+        else {
             printf("No messages available.\n");
         }
     } 
-	else {
+    else {
         printf("Error: User '%s' does not exist. Cannot view messages.\n", user);
     }
-	
-	system("pause");
+    
+    system("pause");
 }
 
+/**
+ * @brief Saves all messages to the MESSAGESFILE.
+ * 
+ * @param SavedMessages - Array of messageTag structures containing the messages to be saved.
+ * @param savedCount - The total number of messages to be saved.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `SavedMessages` array must contain valid messageTag structures, 
+ *                and `savedCount` must accurately reflect the number of messages in the array.
+ * Post-condition: All messages are written to the MESSAGESFILE in a formatted manner. 
+ *                 If the file cannot be opened, an error message is displayed.
+ */
 void saveMessagesToFile(messageTag SavedMessages[MAX_MESSAGES], int savedCount) {
     FILE *pFile = fopen(MESSAGESFILE, "wt");
     int i = 0, j;
 
     if (pFile != NULL) {
-        fprintf(pFile, "%d\n", savedCount);
+        fprintf(pFile, "%d\n", savedCount); // Write the total number of messages
         while (i < savedCount) {
-            fprintf(pFile, "%s|", SavedMessages[i].strSender);
+            fprintf(pFile, "%s|", SavedMessages[i].strSender); // Write sender
             j = 0;
             while (j < SavedMessages[i].numReceivers) {
-                fprintf(pFile, "%s", SavedMessages[i].strReceivers[j]);
+                fprintf(pFile, "%s", SavedMessages[i].strReceivers[j]); // Write each receiver
                 if (j < SavedMessages[i].numReceivers - 1) {
-                    fprintf(pFile, ",");
+                    fprintf(pFile, ","); // Separate receivers with a comma
                 }
                 j++;
             }
-            fprintf(pFile, "|%s|%d\n", SavedMessages[i].strSubject, SavedMessages[i].numLines);
+            fprintf(pFile, "|%s|%d\n", SavedMessages[i].strSubject, SavedMessages[i].numLines); // Write subject and number of lines
 
             j = 0;
             while (j < SavedMessages[i].numLines) {
-                fprintf(pFile, "%s\n", SavedMessages[i].strMessageEntry[j]);
+                fprintf(pFile, "%s\n", SavedMessages[i].strMessageEntry[j]); // Write each line of the message
                 j++;
             }
             i++;
         }
-        fclose(pFile);
+        fclose(pFile); // Close the file
     } 
-	else {
-        printf("Error opening %s for writing.\n", MESSAGESFILE);
+    else {
+        printf("Error opening %s for writing.\n", MESSAGESFILE); // Display error if file cannot be opened
     }
 }
 
+/**
+ * @brief Allows a user to compose and send a message to one or more recipients.
+ * 
+ * @param user - The username of the sender.
+ * @param SavedMessages - Array of messageTag structures where the composed message will be saved.
+ * @param savedCount - Pointer to the count of saved messages.
+ * @param LoadedUsers - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The user must be a valid registered user. SavedMessages must have enough space to store the message.
+ * Post-condition: The message is saved to the SavedMessages array and written to the file if all recipients are valid.
+ */
 void composeMessage(char user[], messageTag SavedMessages[MAX_MESSAGES], int *savedCount, UserInfo LoadedUsers[MAX_USERS], int numUsers) {
     if (*savedCount >= MAX_MESSAGES) {
         printf("Message limit reached. Cannot compose more messages.\n");
@@ -512,7 +696,19 @@ void composeMessage(char user[], messageTag SavedMessages[MAX_MESSAGES], int *sa
 }
 
 /*---------------------------------------------------------------------------------------------------------------------------------*/
-
+/**
+ * @brief Adds a personal connection for a user.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the user adding the connection.
+ * @param targetIndex - The index of the user to be added as a connection.
+ * 
+ * @return void
+ * 
+ * Pre-condition: Both userIndex and targetIndex must be valid indices within the newUser array.
+ * Post-condition: If the connection is valid, it is added to the user's list of connections.
+ */
 void addUserConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, int targetIndex) { // 8.4
     // Check if the user is trying to add themselves
     if (userIndex == targetIndex) {
@@ -526,6 +722,22 @@ void addUserConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex,
     system("pause");
 }
 
+/**
+ * @brief Displays the profile page of a specific user and provides options to add them as a connection or send a message.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param targetIndex - The index of the user whose profile is being viewed.
+ * @param userIndex - The index of the logged-in user viewing the profile.
+ * @param username - The username of the logged-in user.
+ * @param SavedMessages - Array of messageTag structures where messages will be saved.
+ * @param savedCount - Pointer to the count of saved messages.
+ * 
+ * @return void
+ * 
+ * Pre-condition: Both userIndex and targetIndex must be valid indices within the newUser array.
+ * Post-condition: The user can add the target user as a connection, send a message, or go back to the previous menu.
+ */
 void viewUserPage(UserInfo newUser[MAX_USERS], int numUsers, int targetIndex, int userIndex, char *username, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) { // 8.3
 	int bGoBack = 0;
 	do {
@@ -558,6 +770,21 @@ void viewUserPage(UserInfo newUser[MAX_USERS], int numUsers, int targetIndex, in
 	} while (!bGoBack);
 }
 
+/**
+ * @brief Filters and displays users whose names match a given search term.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the logged-in user performing the search.
+ * @param username - The username of the logged-in user.
+ * @param SavedMessages - Array of messageTag structures where messages will be saved.
+ * @param savedCount - Pointer to the count of saved messages.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Displays a list of users whose names match the search term. The user can view the profile of a selected user or go back.
+ */
 void filterUsersByName(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, char *username, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) { // 8.2
     char searchName[51];
     int i, found = 0;
@@ -596,6 +823,21 @@ void filterUsersByName(UserInfo newUser[MAX_USERS], int numUsers, int userIndex,
     }
 }
 
+/**
+ * @brief Filters and displays users whose names match a given search term.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the logged-in user performing the search.
+ * @param username - The username of the logged-in user.
+ * @param SavedMessages - Array of messageTag structures where messages will be saved.
+ * @param savedCount - Pointer to the count of saved messages.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Displays a list of users whose names match the search term. The user can view the profile of a selected user or go back.
+ */
 void viewAllUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, char *username, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) { // 8.1
     int i, j, nChoice;
     int targetIndex;
@@ -639,6 +881,21 @@ void viewAllUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, char
     }
 }
 
+/**
+ * @brief Provides options to browse all users or search for users by name.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the logged-in user.
+ * @param username - The username of the logged-in user.
+ * @param SavedMessages - Array of messageTag structures where messages will be saved.
+ * @param savedCount - Pointer to the count of saved messages.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Allows the user to view all users or search for users by name. The user can navigate back to the previous menu.
+ */
 void browseUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, char *username, messageTag SavedMessages[MAX_MESSAGES], int *savedCount) { // 8
     int nChoice;
     
@@ -660,6 +917,18 @@ void browseUsers(UserInfo newUser[MAX_USERS], int numUsers, int userIndex, char 
     } while (nChoice != 3);
 }
 
+/**
+ * @brief Displays a list of users who have added the logged-in user to their connections.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the logged-in user.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Displays a list of users who have the logged-in user in their connections. If no users are found, a message is displayed.
+ */
 void viewUserConnections(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 7.4
     int i, j, found = 0;
 
@@ -691,6 +960,20 @@ void viewUserConnections(UserInfo newUser[MAX_USERS], int numUsers, int userInde
     system("pause");
 }
 
+/**
+ * @brief Removes a personal connection from the logged-in user's list of connections.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the logged-in user.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `userIndex` must be a valid index within the array.
+ * Post-condition: If the specified connection exists, it is removed from the user's list of connections. 
+ *                 The updated list is saved to the file. If no connections exist or the specified connection is not found, 
+ *                 an appropriate message is displayed.
+ */
 void removePersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 7.3
     char connectionName[MAX_CHAR_USER];
     int i, j, connectionIndex = -1, found = 0;
@@ -748,6 +1031,20 @@ void removePersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int use
     system("pause");
 }
 
+/**
+ * @brief Removes a personal connection from the logged-in user's list of connections.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the logged-in user.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `userIndex` must be a valid index within the array.
+ * Post-condition: If the specified connection exists, it is removed from the user's list of connections. 
+ *                 The updated list is saved to the file. If no connections exist or the specified connection is not found, 
+ *                 an appropriate message is displayed.
+ */
 void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex) { // 7.2
     int i, hasConnections = 0;
 
@@ -770,6 +1067,20 @@ void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex) { // 7.
     system("pause");
 }
 
+/**
+ * @brief Removes a personal connection from the logged-in user's list of connections.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the logged-in user.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `userIndex` must be a valid index within the array.
+ * Post-condition: If the specified connection exists, it is removed from the user's list of connections. 
+ *                 The updated list is saved to the file. If no connections exist or the specified connection is not found, 
+ *                 an appropriate message is displayed.
+ */
 void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 7.1
     char connectionName[MAX_CHAR_USER];
     int connectionIndex = -1, alreadyConnected = 0, validConnection = 0;
@@ -832,6 +1143,18 @@ void addPersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int userIn
     system("pause");
 }
 
+/**
+ * @brief Provides options to manage the personal connections of the logged-in user.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the logged-in user.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `userIndex` must be a valid index within the array.
+ * Post-condition: Allows the user to add, view, or remove personal connections, or view users who have added them as a connection.
+ */
 void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 7
     int bQuit = 0, nChoice;
 
@@ -874,6 +1197,19 @@ void modifyPersonalConnectionsPage(UserInfo newUser[MAX_USERS], int numUsers, in
 	}
 }
 
+/**
+ * @brief Allows the logged-in user to modify their account security settings, including password and security question/answer.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the logged-in user.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `userIndex` must be a valid index within the array.
+ * Post-condition: Updates the user's password and/or security question/answer if the current password is verified. 
+ *                 Changes are saved to the file.
+ */
 void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) { // 6
     UserInfo userTemp;
     char currentPassword[MAX_CHAR_PASS];
@@ -969,6 +1305,19 @@ void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, int userIn
     }
 }
 
+/**
+ * @brief Allows the logged-in user to modify their account security settings, including password and security question/answer.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the logged-in user.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `userIndex` must be a valid index within the array.
+ * Post-condition: Updates the user's password and/or security question/answer if the current password is verified. 
+ *                 Changes are saved to the file.
+ */
 void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) { // 5
     UserInfo userTemp;
     char tempName[21];
@@ -1088,6 +1437,27 @@ void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *use
     }
 }
 
+/**
+ * @brief Provides the main interface for the logged-in user to access various features, such as messaging, personal content modification, and browsing users.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param username - The username of the logged-in user.
+ * @param userIndex - The index of the logged-in user.
+ * @param sentCount - Pointer to the count of sent messages.
+ * @param announcementCount - Pointer to the count of announcements.
+ * @param receiveCount - Pointer to the count of received messages.
+ * @param numMessages - Pointer to the total number of messages.
+ * @param messages - Array of messageTag structures containing all messages.
+ * @param sentMessages - Array of messageTag structures containing sent messages.
+ * @param Announcements - Array of messageTag structures containing announcements.
+ * @param Received - Array of messageTag structures containing received messages.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `userIndex` must be a valid index within the array.
+ * Post-condition: Allows the user to navigate through various features and perform actions such as composing messages, viewing inbox, and modifying personal details.
+ */
 void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex, 
                     int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
                     messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
@@ -1149,6 +1519,27 @@ void userModulePage(UserInfo newUser[MAX_USERS], int numUsers, char *username, i
 /********************************
 USER CREATION AND LOGIN FUNCTIONS
 *********************************/
+/**
+ * @brief Provides the main interface for the logged-in user to access various features, such as messaging, personal content modification, and browsing users.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param username - The username of the logged-in user.
+ * @param userIndex - The index of the logged-in user.
+ * @param sentCount - Pointer to the count of sent messages.
+ * @param announcementCount - Pointer to the count of announcements.
+ * @param receiveCount - Pointer to the count of received messages.
+ * @param numMessages - Pointer to the total number of messages.
+ * @param messages - Array of messageTag structures containing all messages.
+ * @param sentMessages - Array of messageTag structures containing sent messages.
+ * @param Announcements - Array of messageTag structures containing announcements.
+ * @param Received - Array of messageTag structures containing received messages.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `userIndex` must be a valid index within the array.
+ * Post-condition: Allows the user to navigate through various features and perform actions such as composing messages, viewing inbox, and modifying personal details.
+ */
 int getUserIndexNoPassword(char username[MAX_CHAR_USER],UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not, returns the index of the found username
     for (int i = 0; i < numUsers; i++) {
         if (strcmp(newUser[i].username, username) == 0) {
@@ -1158,6 +1549,19 @@ int getUserIndexNoPassword(char username[MAX_CHAR_USER],UserInfo newUser[MAX_USE
     return -1; // User index not found
 }
 
+/**
+ * @brief Handles the password reset process for users who have forgotten their password.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param resetRequests - Array to store usernames of users requesting password resets.
+ * @param numResetRequests - Pointer to the count of password reset requests.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: If the username and security answer are valid, a password reset request is added to the `resetRequests` array.
+ */
 void forgotPassword(UserInfo newUser[MAX_USERS], int numUsers, char resetRequests[MAX_CHAR_USER][MAX_USERS], int *numResetRequests) {
     char nameInput[MAX_CHAR_USER];
     char securityAnswer[MAX_CHAR_SEC];
@@ -1200,6 +1604,18 @@ void forgotPassword(UserInfo newUser[MAX_USERS], int numUsers, char resetRequest
     system("pause");
 }
 
+/**
+ * @brief Checks if a given username is already taken by another user.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param username - The username to check for availability.
+ * 
+ * @return int - Returns 1 if the username is taken, 0 otherwise.
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Determines whether the username is already in use.
+ */
 int isUsernameTaken(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
     int i;
     for (i = 0; i < numUsers; i++) {
@@ -1210,6 +1626,17 @@ int isUsernameTaken(UserInfo newUser[MAX_USERS], int numUsers, char *username) {
     return 0; // Username is available
 }
 
+/**
+ * @brief Allows a new user to create an account by providing their details.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - Pointer to the total number of registered users.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must have enough space to accommodate a new user, and `numUsers` must accurately reflect the current number of users.
+ * Post-condition: Adds a new user to the `newUser` array and updates the `numUsers` count. Saves the new user data to the file.
+ */
 void createNewAccount(UserInfo newUser[MAX_USERS], int *numUsers) {
     UserInfo userTemp; // Place inputs here for safekeeping
     int bGoBack = 0;
@@ -1292,6 +1719,17 @@ void createNewAccount(UserInfo newUser[MAX_USERS], int *numUsers) {
     }
 }
 
+/**
+ * @brief Saves all user data to the USERSFILE.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Writes all user data to the USERSFILE in a formatted manner. If the file cannot be opened, an error message is displayed.
+ */
 void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers) {
     FILE *pFile = fopen(USERSFILE, "wt"); // Open in write mode
     int i, j;
@@ -1350,6 +1788,20 @@ void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers) {
     }
 }
 
+/**
+ * @brief Parses a string of connections separated by '|' and stores them in an array.
+ * 
+ * @param connections - A 2D array where each row will store an individual connection.
+ * @param tempConnections - A string containing the connections separated by '|'.
+ * @param numConnections - Pointer to an integer that will store the total number of connections parsed.
+ * 
+ * @return void
+ * 
+ * Pre-condition: `tempConnections` must be a valid, null-terminated string. 
+ *                `connections` must have enough space to store the parsed connections.
+ * Post-condition: The `connections` array is populated with individual connections, and 
+ *                 `numConnections` is updated with the count of parsed connections.
+ */
 void parseConnections(char connections[MAX_CONNECTIONS][MAX_CHAR_USER], char tempConnections[], int *numConnections) {
     char *token = strtok(tempConnections, "|");  // Split connections using '|'
     *numConnections = 0;
@@ -1363,6 +1815,20 @@ void parseConnections(char connections[MAX_CONNECTIONS][MAX_CHAR_USER], char tem
     }
 }
 
+/**
+ * @brief Loads user data from the USERSFILE into the newUser structure.
+ * 
+ * @param newUser - Array of UserInfo structures where the loaded user data will be stored.
+ * @param numUsers - Pointer to an integer that will store the total number of users loaded.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The USERSFILE must exist and contain valid user data. 
+ *                `newUser` must have enough space to store all the loaded users.
+ * Post-condition: The `newUser` array is populated with the loaded user data, and 
+ *                 `numUsers` is updated with the count of loaded users. If the file cannot be opened, 
+ *                 an error message is displayed, and `numUsers` is set to 0.
+ */
 void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers) {
     FILE *pFile = fopen(USERSFILE, "rt"); // Open in read mode
     String strTemp;
@@ -1408,6 +1874,19 @@ void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers) {
     }
 }
 
+/**
+ * @brief Checks if a given username and password combination is valid.
+ * 
+ * @param username - The username to validate.
+ * @param password - The password to validate.
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * 
+ * @return int - Returns 1 if the username and password combination is valid, 0 otherwise.
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Determines whether the username and password combination is valid.
+ */
 int isUserValid(char username[MAX_CHAR_USER], char password[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not 
 	int i;
     for (i = 0; i < numUsers; i++) {
@@ -1418,6 +1897,19 @@ int isUserValid(char username[MAX_CHAR_USER], char password[MAX_CHAR_PASS], User
     return 0; // Invalid user
 }
 
+/**
+ * @brief Retrieves the index of a user in the newUser structure based on their username and password.
+ * 
+ * @param username - The username to search for.
+ * @param password - The password to validate.
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * 
+ * @return int - The index of the user if found, or -1 if the username and password combination does not exist.
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Returns the index of the user if the username and password combination exists, or -1 if it does not.
+ */
 int getUserIndex(char username[MAX_CHAR_USER], char password[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers) { //Loops through the UsersFile to determine whether user is valid or not, returns the index of the found username
 	int i;
     for (i = 0; i < numUsers; i++) {
@@ -1428,6 +1920,25 @@ int getUserIndex(char username[MAX_CHAR_USER], char password[MAX_CHAR_PASS], Use
     return -1; // User index not found
 }
 
+/**
+ * @brief Handles the login process for users, allowing them to access their account or return to the previous page.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param sentCount - Pointer to the count of sent messages.
+ * @param announcementCount - Pointer to the count of announcements.
+ * @param receiveCount - Pointer to the count of received messages.
+ * @param numMessages - Pointer to the total number of messages.
+ * @param messages - Array of messageTag structures containing all messages.
+ * @param sentMessages - Array of messageTag structures containing sent messages.
+ * @param Announcements - Array of messageTag structures containing announcements.
+ * @param Received - Array of messageTag structures containing received messages.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: If login is successful, the user is redirected to the user module. If the password is "default," the account is locked until the password is changed.
+ */
 void Login(UserInfo newUser[MAX_USERS], int numUsers,
     int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
     messageTag sentMessages[MAX_MESSAGES], messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
@@ -1501,6 +2012,28 @@ void Login(UserInfo newUser[MAX_USERS], int numUsers,
     }
 }
 
+/**
+ * @brief Displays the main login page, providing options for user login, account creation, administrator module access, password recovery, or quitting the application.
+ * 
+ * @param adminPass - The administrator password.
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - Pointer to the total number of registered users.
+ * @param resetRequests - Array to store usernames of users requesting password resets.
+ * @param numResetRequests - Pointer to the count of password reset requests.
+ * @param sentCount - Pointer to the count of sent messages.
+ * @param announcementCount - Pointer to the count of announcements.
+ * @param receiveCount - Pointer to the count of received messages.
+ * @param numMessages - Pointer to the total number of messages.
+ * @param messages - Array of messageTag structures containing all messages.
+ * @param sentMessages - Array of messageTag structures containing sent messages.
+ * @param Announcements - Array of messageTag structures containing announcements.
+ * @param Received - Array of messageTag structures containing received messages.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Allows the user to navigate to the appropriate module or perform the selected action.
+ */
 void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, char resetRequests[MAX_CHAR_USER][MAX_USERS], int *numResetRequests, 
                 int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
                 messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
@@ -1540,7 +2073,17 @@ void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *
 /**************
 ADMIN FUNCTIONS
 ***************/
-
+/**
+ * @brief Saves the administrator password to the ADMINPASSFILE.
+ * 
+ * @param adminPass - The administrator password to be saved.
+ * 
+ * @return void
+ * 
+ * Pre-condition: adminPass must be a valid, null-terminated string.
+ * Post-condition: The administrator password is written to the ADMINPASSFILE. 
+ *                 If the file cannot be opened, an error message is displayed.
+ */
 void saveToAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //Used in changePassword file, saves a new password to AdminPassFIle if called
 	FILE *pFile = fopen(ADMINPASSFILE, "wt"); // Open in write mode
 
@@ -1554,6 +2097,17 @@ void saveToAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //Used in changePasswo
     }
 }
 
+/**
+ * @brief Creates a new administrator password and saves it to the ADMINPASSFILE.
+ * 
+ * @param adminPass - The administrator password to be updated.
+ * 
+ * @return void
+ * 
+ * Pre-condition: adminPass must be a valid, null-terminated string.
+ * Post-condition: The new administrator password is saved to the ADMINPASSFILE. 
+ *                 If the user cancels the process, no changes are made.
+ */
 void createNewAdminPass(char adminPass[MAX_CHAR_PASS]) { //Create new admin password function
     char strInput[MAX_CHAR_PASS];
     int bGoBack = 0;
@@ -1592,6 +2146,17 @@ void createNewAdminPass(char adminPass[MAX_CHAR_PASS]) { //Create new admin pass
     }
 }
 
+/**
+ * @brief Allows the administrator to change their password.
+ * 
+ * @param adminPass - The current administrator password to be updated.
+ * 
+ * @return void
+ * 
+ * Pre-condition: adminPass must be a valid, null-terminated string.
+ * Post-condition: The administrator password is updated and saved to the ADMINPASSFILE. 
+ *                 If the current password is incorrect or the process is canceled, no changes are made.
+ */
 void changeAdminPass(char adminPass[MAX_CHAR_PASS]) {
     char currentPass[MAX_CHAR_PASS];
     char newPass[MAX_CHAR_PASS];
@@ -1640,6 +2205,18 @@ void changeAdminPass(char adminPass[MAX_CHAR_PASS]) {
     }
 }
 
+/**
+ * @brief Loads the administrator password from the ADMINPASSFILE.
+ * 
+ * @param adminPass - The administrator password to be loaded.
+ * 
+ * @return void
+ * 
+ * Pre-condition: `adminPass` must be a valid, null-terminated string. 
+ *                The ADMINPASSFILE must exist or be created if it does not.
+ * Post-condition: The administrator password is loaded from the ADMINPASSFILE. 
+ *                 If the file does not exist, a new password is created.
+ */
 void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //loads information from AdminPassFile (creates new file if not initialized yet)
     FILE *pFile;
 
@@ -1656,6 +2233,20 @@ void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //loads information 
 	}
 }
 
+/**
+ * @brief Handles password reset requests by resetting user passwords to a default value.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param resetRequests - Array of usernames requesting password resets.
+ * @param numResetRequests - Pointer to the count of password reset requests.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Resets the passwords of users in the resetRequests array to the default password. 
+ *                 The resetRequests array is updated to remove processed requests.
+ */
 void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, char resetRequests[MAX_CHAR_USER][MAX_USERS], int *numResetRequests) {
     int i, userIndex;
     char defaultPassword[MAX_CHAR_PASS] = "default";
@@ -1715,6 +2306,20 @@ void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, c
     system("pause");
 }
 
+/**
+ * @brief Handles password reset requests by resetting user passwords to a default value.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param resetRequests - Array of usernames requesting password resets.
+ * @param numResetRequests - Pointer to the count of password reset requests.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Resets the passwords of users in the resetRequests array to the default password. 
+ *                 The resetRequests array is updated to remove processed requests.
+ */
 void cipherPassword(char *password, char *cipheredPassword) {
     int shift = 3, i;
     for (i = 0; password[i] != '\0'; i++) {
@@ -1723,6 +2328,20 @@ void cipherPassword(char *password, char *cipheredPassword) {
     cipheredPassword[i] = '\0';
 }
 
+/**
+ * @brief Handles password reset requests by resetting user passwords to a default value.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param resetRequests - Array of usernames requesting password resets.
+ * @param numResetRequests - Pointer to the count of password reset requests.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Resets the passwords of users in the resetRequests array to the default password. 
+ *                 The resetRequests array is updated to remove processed requests.
+ */
 void AdminViewAllUsers(UserInfo newUser[MAX_USERS], int numUsers) {
     int i, j;
     char cipheredPassword[MAX_CHAR_PASS];
@@ -1768,6 +2387,18 @@ void AdminViewAllUsers(UserInfo newUser[MAX_USERS], int numUsers) {
     system("pause");
 }
 
+/**
+ * @brief Allows the administrator to edit the details of a specific user, including name, username, description, and connections.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param userIndex - The index of the user to be edited.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `userIndex` must be a valid index within the array.
+ * Post-condition: Updates the user's details based on the administrator's input and saves the changes to the file.
+ */
 void editUserDetails(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) {
     int nChoice, done = 0;
     char temp[MAX_CHAR_USER];
@@ -1824,6 +2455,18 @@ void editUserDetails(UserInfo newUser[MAX_USERS], int numUsers, int userIndex) {
     }
 }
 
+/**
+ * @brief Deletes a user from the system and removes them from other users' connection lists.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - Pointer to the total number of registered users.
+ * @param userIndex - The index of the user to be deleted.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `userIndex` must be a valid index within the array.
+ * Post-condition: The user is removed from the system, and their connections are updated in other users' lists. Changes are saved to the file.
+ */
 void deleteUser(UserInfo newUser[MAX_USERS], int *numUsers, int userIndex) {
     int i, j, k, found;
 
@@ -1856,6 +2499,17 @@ void deleteUser(UserInfo newUser[MAX_USERS], int *numUsers, int userIndex) {
     system("pause");
 }
 
+/**
+ * @brief Allows the administrator to modify the details of registered users.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: The administrator can edit the details of a selected user. Changes are saved to the file.
+ */
 void AdminModifyUsers(UserInfo newUser[MAX_USERS], int numUsers) {
     int nChoice, bQuit = 0;
     int targetIndex;
@@ -1873,6 +2527,17 @@ void AdminModifyUsers(UserInfo newUser[MAX_USERS], int numUsers) {
     }
 }
 
+/**
+ * @brief Allows the administrator to delete a user from the system.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - Pointer to the total number of registered users.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: The selected user is removed from the system, and their connections are updated in other users' lists. Changes are saved to the file.
+ */
 void AdminDeleteUsers(UserInfo newUser[MAX_USERS], int *numUsers) {
     int nChoice, bQuit = 0;
     int userIndex;
@@ -1890,6 +2555,19 @@ void AdminDeleteUsers(UserInfo newUser[MAX_USERS], int *numUsers) {
     }
 }
 
+/**
+ * @brief Provides the administrator with options to manage users, including viewing, modifying, refreshing passwords, and deleting users.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param resetRequests - Array of usernames requesting password resets.
+ * @param numResetRequests - Pointer to the count of password reset requests.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Allows the administrator to perform user management tasks or exit the module.
+ */
 void AdminHandleUsersModulePage(UserInfo newUser[MAX_USERS], int numUsers, char resetRequests[MAX_CHAR_USER][MAX_USERS], int *numResetRequests) {
     int nChoice, bQuit = 0;
 
@@ -1926,6 +2604,17 @@ void AdminHandleUsersModulePage(UserInfo newUser[MAX_USERS], int numUsers, char 
     }
 }
 
+/**
+ * @brief Allows the administrator to delete a specific message from the system.
+ * 
+ * @param SavedMessages - Array of messageTag structures containing all saved messages.
+ * @param totalMessages - Pointer to the total number of messages in the system.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `SavedMessages` array must contain valid message data, and `totalMessages` must accurately reflect the number of messages.
+ * Post-condition: The selected message is removed from the system, and changes are saved to the file.
+ */
 void AdminDeleteMessage(messageTag SavedMessages[MAX_MESSAGES], int *totalMessages) {
     int nChoice, i, j;
     int bQuit = 0;
@@ -1982,6 +2671,17 @@ void AdminDeleteMessage(messageTag SavedMessages[MAX_MESSAGES], int *totalMessag
     }
 }
 
+/**
+ * @brief Allows the administrator to delete a specific message from the system.
+ * 
+ * @param SavedMessages - Array of messageTag structures containing all saved messages.
+ * @param totalMessages - Pointer to the total number of messages in the system.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `SavedMessages` array must contain valid message data, and `totalMessages` must accurately reflect the number of messages.
+ * Post-condition: The selected message is removed from the system, and changes are saved to the file.
+ */
 void AdminViewFilteredMessages(messageTag SavedMessages[MAX_MESSAGES], int totalMessages) {
     int nChoice, i, j;
     char filter[MAX_CHAR_USER];
@@ -2075,6 +2775,17 @@ void AdminViewFilteredMessages(messageTag SavedMessages[MAX_MESSAGES], int total
     }
 }
 
+/**
+ * @brief Allows the administrator to delete a specific message from the system.
+ * 
+ * @param SavedMessages - Array of messageTag structures containing all saved messages.
+ * @param totalMessages - Pointer to the total number of messages in the system.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `SavedMessages` array must contain valid message data, and `totalMessages` must accurately reflect the number of messages.
+ * Post-condition: The selected message is removed from the system, and changes are saved to the file.
+ */
 void AdminViewAllMessages(messageTag SavedMessages[MAX_MESSAGES], int totalMessages, UserInfo newUser[MAX_USERS], int numUsers) {
     int i, j, senderExists;
 
@@ -2121,6 +2832,19 @@ void AdminViewAllMessages(messageTag SavedMessages[MAX_MESSAGES], int totalMessa
     system("pause");
 }
 
+/**
+ * @brief Provides the administrator with options to manage messages, including viewing all messages, filtering messages, and deleting messages.
+ * 
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param numMessages - Pointer to the total number of messages in the system.
+ * @param messages - Array of messageTag structures containing all messages.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Allows the administrator to perform message management tasks or exit the module.
+ */
 void AdminHandleMessagesModulePage(UserInfo newUser[MAX_USERS], int numUsers,  int *numMessages, messageTag messages[MAX_MESSAGES]) {
     int nChoice, bQuit = 0;
 
@@ -2154,6 +2878,22 @@ void AdminHandleMessagesModulePage(UserInfo newUser[MAX_USERS], int numUsers,  i
     }
 }
 
+/**
+ * @brief Provides the main interface for the administrator to access user and message management modules or change the admin password.
+ * 
+ * @param adminPass - The administrator password.
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param resetRequests - Array of usernames requesting password resets.
+ * @param numResetRequests - Pointer to the count of password reset requests.
+ * @param numMessages - Pointer to the total number of messages in the system.
+ * @param messages - Array of messageTag structures containing all messages.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `newUser` array must contain valid user data, and `numUsers` must accurately reflect the number of users.
+ * Post-condition: Allows the administrator to navigate to the appropriate module or perform the selected action.
+ */
 void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, char resetRequests[MAX_CHAR_USER][MAX_USERS], int *numResetRequests, int *numMessages, messageTag messages[MAX_MESSAGES]) {
     int nChoice;
     int bQuit = 0;
@@ -2187,6 +2927,22 @@ void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS],
     }
 }
 
+/**
+ * @brief Handles the login process for the administrator, allowing access to the admin module upon successful authentication.
+ * 
+ * @param adminPass - The administrator password.
+ * @param newUser - Array of UserInfo structures containing all registered users.
+ * @param numUsers - The total number of registered users.
+ * @param resetRequests - Array of usernames requesting password resets.
+ * @param numResetRequests - Pointer to the count of password reset requests.
+ * @param numMessages - Pointer to the total number of messages in the system.
+ * @param messages - Array of messageTag structures containing all messages.
+ * 
+ * @return void
+ * 
+ * Pre-condition: The `adminPass` must be a valid, null-terminated string.
+ * Post-condition: Grants access to the admin module if the password is correct or exits after three failed attempts.
+ */
 void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, char resetRequests[MAX_CHAR_USER][MAX_USERS], int *numResetRequests, int *numMessages, messageTag messages[MAX_MESSAGES]) {
     char enteredPass[MAX_CHAR_PASS];
     int attempts = 3;
