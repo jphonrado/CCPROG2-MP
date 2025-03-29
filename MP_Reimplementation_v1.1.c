@@ -54,8 +54,8 @@ void saveToUsersFile(UserInfo newUser[MAX_USERS], int numUsers);
 void loadFromUsersFile(UserInfo newUser[MAX_USERS], int *numUsers);
 int isUserValid(String username, String password, UserInfo newUser[MAX_USERS], int numUsers);
 int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], int numUsers);
-void Login(UserInfo newUser[MAX_USERS], int *numUsers,
-    int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+void Login(UserInfo newUser[MAX_USERS], int numUsers,
+int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
     messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) ;
 void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, String resetRequests[MAX_USERS], int *numResetRequests, 
         int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
@@ -70,11 +70,11 @@ void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]);
 void createNewAdminPass(char adminPass[MAX_CHAR_PASS]);
 void changeAdminPass(char adminPass[MAX_CHAR_PASS]);
 void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests, 
-    int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
     messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) ;
 void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests,
-        int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
-        messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]);
+int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+    messageTag sentMessages[MAX_MESSAGES],messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]);
 void forgotPassword(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
 void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests);
 void editUserDetails(UserInfo newUser[MAX_USERS], int numUsers, int userIndex);
@@ -733,7 +733,6 @@ void removePersonalConnection(UserInfo newUser[MAX_USERS], int numUsers, int use
     system("pause");
 }
 
-
 void viewPersonalConnections(UserInfo newUser[MAX_USERS], int userIndex) { // 7.2
     int i, hasConnections = 0;
 
@@ -937,6 +936,7 @@ void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, int userIn
                                 newUser[userIndex] = userTemp;
 
                                 // Save changes to file
+                                newUser[userIndex].isAccountLocked = 0;
                                 saveToUsersFile(newUser, numUsers);
                                 printf("Security settings updated successfully!\n");
                                 done = 1;
@@ -953,7 +953,6 @@ void modifyAccountSecurity(UserInfo newUser[MAX_USERS], int numUsers, int userIn
         system("pause");
     }
 }
-
 
 void modifyPersonalContents(UserInfo newUser[MAX_USERS], int numUsers, char *username, int userIndex) { // 5
     UserInfo userTemp;
@@ -1142,6 +1141,7 @@ int getUserIndexNoPassword(String username,UserInfo newUser[MAX_USERS], int numU
     }
     return -1; // User index not found
 }
+
 void forgotPassword(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     char nameInput[MAX_CHAR_USER];
     char securityAnswer[MAX_CHAR_SEC];
@@ -1412,7 +1412,7 @@ int getUserIndex(String username, String password, UserInfo newUser[MAX_USERS], 
     return -1; // User index not found
 }
 
-void Login(UserInfo newUser[MAX_USERS], int *numUsers,
+void Login(UserInfo newUser[MAX_USERS], int numUsers,
     int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
     messageTag sentMessages[MAX_MESSAGES], messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
     String nameInput;
@@ -1432,22 +1432,31 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers,
         bGoBack = strcmp(nameInput, "back") == 0;
 
         if (!bGoBack) {
-            printf("Enter Password: ");
-            fgets(passInput, sizeof(passInput), stdin);
-            clean(passInput);
+            userIndex = getUserIndexNoPassword(nameInput, newUser, numUsers);
 
-            userIndex = getUserIndex(nameInput, passInput, newUser, *numUsers);
+            if (userIndex != -1) {
+                // Check if the account is locked
+                if (newUser[userIndex].isAccountLocked) {
+                    printf("Your account is locked. Please contact the administrator to unlock your account.\n");
+                    system("pause");
+                    bGoBack = 1;  // Exit the login process
+                } 
+				else {
+                    printf("Enter Password: ");
+                    fgets(passInput, sizeof(passInput), stdin);
+                    clean(passInput);
 
-            // Check if account is locked
-            if (userIndex != -1 && newUser[userIndex].isAccountLocked) {
-                printf("Your account is locked. Please contact the administrator to unlock your account.\n");
-                system("pause");
-                bGoBack = 1;  // Force exit after showing the message
+                    if (strcmp(newUser[userIndex].password, passInput) == 0) {
+                        bLoginSuccess = 1; // Mark login as successful
+                    } 
+					else {
+                        attempts--;
+                        printf("Incorrect username or password. Attempts left: %d\n\n", attempts);
+                        system("pause");
+                    }
+                }
             } 
-            else if (userIndex != -1 && isUserValid(nameInput, passInput, newUser, *numUsers)) {
-                bLoginSuccess = 1;  // Mark login as successful
-            } 
-            else {
+			else {
                 attempts--;
                 printf("Incorrect username or password. Attempts left: %d\n\n", attempts);
                 system("pause");
@@ -1457,27 +1466,24 @@ void Login(UserInfo newUser[MAX_USERS], int *numUsers,
 
     if (bGoBack) {
         printf("Returning to the previous page...\n");
-    } 
-    else if (attempts == 0 && userIndex != -1) {
-        printf("Too many failed attempts. Your account is now locked.\n");
-
-        // Lock the account and save changes
-        newUser[userIndex].isAccountLocked = 1;
-        saveToUsersFile(newUser, *numUsers);
+    } else if (attempts == 0) {
+        printf("Too many failed attempts. Returning to the previous page.\n");
         system("pause");
-    } 
-    else if (bLoginSuccess) {
+    } else if (bLoginSuccess) {
         printf("Login successful!\n");
+
+        // Lock the account if the password is "default"
+        if (strcmp(newUser[userIndex].password, "default") == 0) {
+            printf("Your account is temporarily locked. Please change your password in the user module to unlock it.\n");
+            newUser[userIndex].isAccountLocked = 1; // Lock the account
+            saveToUsersFile(newUser, numUsers); 
+        }
+
         system("pause");
-        // Call user module after loop completion
-        userModulePage(newUser, *numUsers, nameInput, userIndex, sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
+
+        userModulePage(newUser, numUsers, nameInput, userIndex, sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
     }
-    system("pause");  // Pause before returning to the main menu
 }
-
-
-
-
 
 void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, String resetRequests[MAX_USERS], int *numResetRequests, 
                 int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
@@ -1497,7 +1503,7 @@ void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *
 
         switch (nChoice) {
             case 1:
-                Login(newUser, numUsers, sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
+                Login(newUser, *numUsers, sentCount, announcementCount, receiveCount, numMessages, messages, sentMessages, Announcements, Received);
                 break;
             case 2:
                 createNewAccount(newUser, numUsers);
@@ -1632,7 +1638,6 @@ void loadFromAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //loads information 
 	}
 }
 
-
 void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     int i, userIndex;
     char defaultPassword[MAX_CHAR_PASS] = "default";
@@ -1668,7 +1673,7 @@ void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, S
                 if (userIndex != -1) {
                     // Reset the user's password to the default password
                     strcpy(newUser[userIndex].password, defaultPassword);
-                    newUser[userIndex].isAccountLocked = 1; // Lock the account until the user changes the password
+                    newUser[userIndex].isAccountLocked = 0; // Lock the account until the user changes the password
                     printf("Password for user '%s' has been reset to '%s'.\n", resetRequests[nChoice - 1], defaultPassword);
 
                     // Remove the request from the list
@@ -1689,6 +1694,7 @@ void refreshUserAccountPasswordPage(UserInfo newUser[MAX_USERS], int numUsers, S
             }
         }
     }
+    system("pause");
 }
 
 void cipherPassword(char *password, char *cipheredPassword) {
@@ -1866,48 +1872,6 @@ void AdminDeleteUsers(UserInfo newUser[MAX_USERS], int *numUsers) {
     }
 }
 
-void AdminUnlockUsers(UserInfo newUser[MAX_USERS], int numUsers) {
-    int i, nChoice, bQuit = 0;
-
-    while (!bQuit) {
-        system("cls");
-        printf("Unlock User Accounts\n\n");
-
-        int lockedUsers = 0;
-        for (i = 0; i < numUsers; i++) {
-            if (newUser[i].isAccountLocked) {
-                printf("[%d] Username: %s\n", i + 1, newUser[i].username);
-                printf("    Name: %s\n", newUser[i].name);
-                printf("    Description: %s\n\n", strlen(newUser[i].description) == 0 ? "DEFAULT USER" : newUser[i].description);
-                lockedUsers++;
-            }
-        }
-
-        if (lockedUsers == 0) {
-            printf("No locked accounts found.\n");
-            bQuit = 1;
-        } else {
-            printf("[0] - Go back\n\n");
-            printf("Enter the number of the user to unlock: ");
-            nChoice = getValidChoice(0, numUsers);
-
-            if (nChoice == 0) {
-                bQuit = 1;
-            } else {
-                int userIndex = nChoice - 1;
-                if (newUser[userIndex].isAccountLocked) {
-                    newUser[userIndex].isAccountLocked = 0;
-                    saveToUsersFile(newUser, numUsers);
-                    printf("User '%s' has been unlocked successfully!\n", newUser[userIndex].username);
-                } else {
-                    printf("User '%s' is not locked.\n", newUser[userIndex].username);
-                }
-                system("pause");
-            }
-        }
-    }
-}
-
 void AdminHandleUsersModulePage(UserInfo newUser[MAX_USERS], int numUsers, String resetRequests[MAX_USERS], int *numResetRequests) {
     int nChoice, bQuit = 0;
 
@@ -1920,10 +1884,9 @@ void AdminHandleUsersModulePage(UserInfo newUser[MAX_USERS], int numUsers, Strin
         printf("[2] - Modify Users\n");
         printf("[3] - Refresh User Account Password\n");
         printf("[4] - Delete Users\n");
-        printf("[5] - Unlock User Accounts\n");
-        printf("[6] - Quit\n\n");
+        printf("[5] - Quit\n\n");
 
-        nChoice = getValidChoice(1, 6);
+        nChoice = getValidChoice(1, 5);
 
         switch (nChoice) {
             case 1:
@@ -1939,9 +1902,6 @@ void AdminHandleUsersModulePage(UserInfo newUser[MAX_USERS], int numUsers, Strin
                 AdminDeleteUsers(newUser, &numUsers);
                 break;
             case 5:
-                AdminUnlockUsers(newUser, numUsers);
-                break;
-            case 6:
                 bQuit = 1;
                 break;
         }
