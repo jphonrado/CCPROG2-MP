@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/theja/Documents/CCPROG2/MP Gummiphone V2/MP_Reimplementation_v1.1",
-      "program": "c:/Users/theja/Documents/CCPROG2/MP Gummiphone V2/MP_Reimplementation_v1.1/build/Debug/outDebug",
+      "cwd": "/response_a23cb940-97ad-4162-9ed6-3eb88e0e8c06",
+      "program": "/response_a23cb940-97ad-4162-9ed6-3eb88e0e8c06/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

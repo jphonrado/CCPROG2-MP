@@ -59,9 +59,8 @@ int isUsernameTaken(UserInfo newUser[MAX_USERS], int numUsers, char *username);
 void createNewAccount(UserInfo newUser[MAX_USERS], int *numUsers);
 
 /****************************LOGIN AND SECURITY FUNCTIONS*****************************/
-void Login(UserInfo newUser[MAX_USERS], int numUsers, int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, 
-    messageTag messages[MAX_MESSAGES], messageTag sentMessages[MAX_MESSAGES], messageTag Announcements[MAX_MESSAGES], 
-    messageTag Received[MAX_MESSAGES]);
+void Login(UserInfo newUser[MAX_USERS], int numUsers, int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
+        messageTag sentMessages[MAX_MESSAGES], messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]);
 void LoginPage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int *numUsers, char resetRequests[MAX_CHAR_USER][MAX_USERS], int *numResetRequests, 
         int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
         messageTag sentMessages[MAX_MESSAGES], messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]);
@@ -1209,7 +1208,7 @@ void createNewAccount(UserInfo newUser[MAX_USERS], int *numUsers) {
     UserInfo userTemp; // Place inputs here for safekeeping
     int bGoBack = 0;
     int bUsernameTaken;
-    char confirmPassword[MAX_CHAR_PASS]; // Used for re-entering password
+    String confirmPassword; // Used for re-entering password
 
     system("cls");
     printf("Creating New Account (Enter 'back' to return to the previous page)\n\n");
@@ -1426,8 +1425,8 @@ int getUserIndex(char username[MAX_CHAR_USER], char password[MAX_CHAR_PASS], Use
 void Login(UserInfo newUser[MAX_USERS], int numUsers,
     int *sentCount, int *announcementCount, int *receiveCount, int *numMessages, messageTag messages[MAX_MESSAGES], 
     messageTag sentMessages[MAX_MESSAGES], messageTag Announcements[MAX_MESSAGES], messageTag Received[MAX_MESSAGES]) {
-    char nameInput[MAX_CHAR_USER];
-    char passInput[MAX_CHAR_PASS];
+    String nameInput;
+    String passInput;
     int userIndex = -1;  // Initialize to -1 to indicate no valid user yet
     int attempts = 3;
     int bGoBack = 0;
@@ -1550,9 +1549,9 @@ void saveToAdminPassFile(char adminPass[MAX_CHAR_PASS]) { //Used in changePasswo
 }
 
 void createNewAdminPass(char adminPass[MAX_CHAR_PASS]) { //Create new admin password function
-    char strInput[MAX_CHAR_PASS];
+    String strInput;
     int bGoBack = 0;
-    char confirmPassword[MAX_CHAR_PASS];
+    String confirmPassword;
 
     system("cls");
     printf("Creating New Admin Password (Enter 'back' to return to the previous page)\n\n");
@@ -1588,9 +1587,7 @@ void createNewAdminPass(char adminPass[MAX_CHAR_PASS]) { //Create new admin pass
 }
 
 void changeAdminPass(char adminPass[MAX_CHAR_PASS]) {
-    char currentPass[MAX_CHAR_PASS];
-    char newPass[MAX_CHAR_PASS];
-    char confirmPass[MAX_CHAR_PASS];
+    String currentPass, newPass, confirmPass;
     int bGoBack = 0;
 
     system("cls");
@@ -2183,7 +2180,7 @@ void AdminModulePage(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS],
 }
 
 void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS], int numUsers, char resetRequests[MAX_CHAR_USER][MAX_USERS], int *numResetRequests, int *numMessages, messageTag messages[MAX_MESSAGES]) {
-    char enteredPass[MAX_CHAR_PASS];
+    String enteredPass;
     int attempts = 3;
     int bGoBack = 0;
     
@@ -2212,46 +2209,46 @@ void AdminModuleLogin(char adminPass[MAX_CHAR_PASS], UserInfo newUser[MAX_USERS]
     }
 }
 int main() {
-   int nChoice, bQuit = 0; // Flags
-   int numUsers; // No. of users
-   char adminPass[MAX_CHAR_PASS];
-   UserInfo newUser[MAX_USERS];
-   char resetRequests[MAX_CHAR_USER][MAX_USERS];
-   int numResetRequests = 0;
+    int nChoice, bQuit = 0; // Flags
+    int numUsers; // No. of users
+    char adminPass[MAX_CHAR_PASS];
+    UserInfo newUser[MAX_USERS];
+    char resetRequests[MAX_CHAR_USER][MAX_USERS];
+    int numResetRequests = 0;
 
-   //MESSAGES VARIABLES
-   int sentCount = 0;
-   int announcementCount = 0;
-   int receiveCount = 0;
-   int numMessages = 0;
-   messageTag messages[MAX_MESSAGES];
-   messageTag sentMessages[MAX_MESSAGES];
-   messageTag Announcements[MAX_MESSAGES];
-   messageTag Received[MAX_MESSAGES];
-   numUsers = 0;
+    //MESSAGES VARIABLES
+    int sentCount = 0;
+    int announcementCount = 0;
+    int receiveCount = 0;
+    int numMessages = 0;
+	messageTag messages[MAX_MESSAGES];
+    messageTag sentMessages[MAX_MESSAGES];
+    messageTag Announcements[MAX_MESSAGES];
+    messageTag Received[MAX_MESSAGES];
+    numUsers = 0;
 
-   loadFromUsersFile(newUser, &numUsers);
+    loadFromUsersFile(newUser, &numUsers);
 
-   do {
-       system("cls");
-       printf("Welcome to the Gummiphone!\n\n");
-       printf("[1] - Login\n");
-       printf("[2] - Administrator Module\n");
-       printf("[3] - Quit\n\n");
+    do {
+        system("cls");
+        printf("Welcome to the Gummiphone!\n\n");
+        printf("[1] - Login\n");
+        printf("[2] - Administrator Module\n");
+        printf("[3] - Quit\n\n");
 
-       nChoice = getValidChoice(1, 3);
+        nChoice = getValidChoice(1, 3);
 
-       if (nChoice == 1) {
-           LoginPage(adminPass, newUser, &numUsers, resetRequests, &numResetRequests, &sentCount, &announcementCount, &receiveCount, &numMessages, messages, sentMessages, Announcements, Received);
-       } 
+        if (nChoice == 1) {
+            LoginPage(adminPass, newUser, &numUsers, resetRequests, &numResetRequests, &sentCount, &announcementCount, &receiveCount, &numMessages, messages, sentMessages, Announcements, Received);
+        } 
 		else if (nChoice == 2) {
-           AdminModuleLogin(adminPass, newUser, numUsers, resetRequests, &numResetRequests, &numMessages, messages);
-       } 
+            AdminModuleLogin(adminPass, newUser, numUsers, resetRequests, &numResetRequests, &numMessages, messages);
+        } 
 		else if (nChoice == 3) {
-           bQuit = 1;
-       }
+            bQuit = 1;
+        }
 
-   } while (!bQuit);
+    } while (!bQuit);
 
-   return 0;
+    return 0;
 }
